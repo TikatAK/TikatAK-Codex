@@ -1,6 +1,6 @@
 {
   "name": "tikatak-codex",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "An AI coding assistant CLI that works with any OpenAI-compatible provider",
   "bin": {
     "codex": "./dist/cli.js",
@@ -11,7 +11,6 @@
   },
   "type": "module",
   "scripts": {
-    "prepare": "node build.mjs",
     "build": "node build.mjs",
     "dev": "node build.mjs --watch",
     "start": "node dist/cli.js",
