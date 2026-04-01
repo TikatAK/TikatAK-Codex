@@ -9,6 +9,9 @@ let _currentConfig: ProviderConfig | null = null
  * Re-creates if config has changed.
  */
 export function getProviderClient(config: ProviderConfig): OpenAI {
+  if (!config.apiKey) throw new Error('API Key 未配置，请先通过设置界面配置 API Key')
+  if (!config.baseURL) throw new Error('Provider Base URL 未配置，请检查 Provider 设置')
+
   const configKey = `${config.baseURL}::${config.apiKey}`
   const currentKey = _currentConfig
     ? `${_currentConfig.baseURL}::${_currentConfig.apiKey}`

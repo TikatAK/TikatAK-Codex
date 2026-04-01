@@ -1,4 +1,5 @@
 import { glob } from 'fs/promises'
+import type { Dirent } from 'fs'
 import * as path from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
@@ -30,8 +31,8 @@ export const GlobTool: ToolDef<Input, string> = {
       for await (const entry of glob(input.pattern, {
         cwd: basePath,
         withFileTypes: false,
-        exclude: (p) => {
-          const str = typeof p === 'string' ? p : String(p)
+        exclude: (p: Dirent | string) => {
+          const str = typeof p === 'string' ? p : p.name
           const alwaysExclude = str.includes('node_modules') || str.includes('.git')
           if (!input.exclude) return alwaysExclude
           return alwaysExclude || str.includes(input.exclude)

@@ -79,6 +79,6 @@ export async function* sendMessageStream(
     ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
   }
 
-  const stream = await client.chat.completions.create(request)
+  const stream = await withRetry(() => client.chat.completions.create(request))
   yield* streamOpenAIToAnthropic(stream)
 }

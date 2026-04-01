@@ -4,6 +4,24 @@
 
 ---
 
+## [1.0.6] - 2026-04-01
+
+### 新增
+- 补充缺失的 `commander` 运行时依赖，确保从 GitHub 直接安装时不报模块缺失错误
+
+### 修复
+- **FileEditTool**：`String.replace()` 对含 `$&`、`$$`、`` $` `` 等特殊字符的替换内容行为错误，改用回调函数规避
+- **FileWriteTool**：写入超过 5 MB 的内容时返回友好错误而非冻结 TUI
+- **TodoWriteTool**：写入异常未捕获导致崩溃；新增重复 ID 检测
+- **WebFetchTool**：非 http/https URL 抛出内部异常，改为提前做协议白名单校验
+- **LSTool**：目录不存在时静默返回空，现返回明确错误信息
+- **claude.ts**：`sendMessageStream` 流创建未经重试，现包裹 `withRetry()` 保护
+- **withRetry.ts**：新增 HTTP 504 Gateway Timeout 为可重试错误
+- **client.ts**：`apiKey`/`baseURL` 为空时提前抛出友好错误，不再依赖 SDK 内部神秘报错
+- **settings/index.ts**：`deleteApiKey` 原用空字符串覆写，敏感 key 残留磁盘；改用文件删除
+
+---
+
 ## [1.0.5] - 2026-04-01
 
 ### 修复

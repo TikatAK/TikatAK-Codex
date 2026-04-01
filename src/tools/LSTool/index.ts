@@ -1,4 +1,4 @@
-import { readdirSync, statSync } from 'fs'
+import { readdirSync, statSync, existsSync } from 'fs'
 import * as path from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
@@ -23,6 +23,10 @@ export const LSTool: ToolDef<Input, string> = {
       : context.cwd
 
     try {
+      if (!existsSync(dirPath) || !isDir(dirPath)) {
+        return { content: `Directory not found: ${dirPath}`, isError: true }
+      }
+
       const lines: string[] = [`// Directory: ${dirPath}\n`]
       let count = 0
 

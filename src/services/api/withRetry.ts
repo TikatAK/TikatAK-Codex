@@ -21,6 +21,7 @@ export async function withRetry<T>(
         status === 500 ||
         status === 502 ||
         status === 503 ||
+        status === 504 ||
         status === 529
 
       if (!isRetryable || attempt === maxRetries) {

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
 import type { StoredProviderSettings } from '../../providers/types.js'
@@ -61,7 +61,7 @@ export function readApiKey(): string | null {
 export function deleteApiKey(): void {
   try {
     if (existsSync(APIKEY_FILE)) {
-      writeFileSync(APIKEY_FILE, '', { encoding: 'utf8', mode: 0o600 })
+      unlinkSync(APIKEY_FILE)
     }
   } catch { /* ignore */ }
 }

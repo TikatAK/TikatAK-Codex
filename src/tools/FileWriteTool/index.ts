@@ -3,6 +3,8 @@ import * as path from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
 
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB guard
+
 const inputSchema = z.object({
   file_path: z.string().describe('Path to write the file to'),
   content: z.string().describe('Full content to write to the file'),
@@ -22,6 +24,9 @@ export const FileWriteTool: ToolDef<Input, string> = {
       : path.join(context.cwd, input.file_path)
 
     try {
+      if (Buffer.byteLength(input.content, 'utf8') > MAX_FILE_SIZE_BYTES) {
+        return { content: `Content too large (exceeds 5 MB). Split into smaller writes.`, isError: true }
+      }
       mkdirSync(path.dirname(filePath), { recursive: true })
       writeFileSync(filePath, input.content, 'utf8')
       const lines = input.content.split('\n').length

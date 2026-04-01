@@ -43,8 +43,22 @@ export const TodoWriteTool: ToolDef<Input, string> = {
   inputSchema,
 
   async execute(input: Input, _context: ToolContext): Promise<ToolResult<string>> {
-    writeTodos(input.todos as Todo[])
-    return { content: `Updated ${input.todos.length} todos` }
+    // Enforce unique IDs
+    const ids = input.todos.map(t => t.id)
+    const dupeIds = ids.filter((id, i) => ids.indexOf(id) !== i)
+    if (dupeIds.length > 0) {
+      return {
+        content: `Duplicate todo IDs detected: ${[...new Set(dupeIds)].join(', ')}`,
+        isError: true,
+      }
+    }
+
+    try {
+      writeTodos(input.todos as Todo[])
+      return { content: `Updated ${input.todos.length} todos` }
+    } catch (err) {
+      return { content: `Failed to write todos: ${String(err)}`, isError: true }
+    }
   },
 }
 

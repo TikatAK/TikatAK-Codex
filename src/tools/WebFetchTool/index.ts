@@ -21,6 +21,17 @@ export const WebFetchTool: ToolDef<Input, string> = {
   async execute(input: Input, _context: ToolContext): Promise<ToolResult<string>> {
     const maxLength = input.max_length ?? MAX_RESPONSE_CHARS
 
+    // Validate URL before attempting fetch
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(input.url)
+    } catch {
+      return { content: `Invalid URL: ${input.url}`, isError: true }
+    }
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return { content: `Unsupported protocol "${parsedUrl.protocol}". Only http and https are allowed.`, isError: true }
+    }
+
     try {
       const controller = new AbortController()
       const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)

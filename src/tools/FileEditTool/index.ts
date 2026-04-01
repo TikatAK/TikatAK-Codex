@@ -61,7 +61,8 @@ export const FileEditTool: ToolDef<Input, string> = {
         }
       }
 
-      const newContent = content.replace(input.old_string, input.new_string)
+      // Use a callback to avoid $& / $1 / $` replacement-pattern interpretation in new_string
+      const newContent = content.replace(input.old_string, () => input.new_string)
       writeFileSync(filePath, newContent, 'utf8')
 
       const linesChanged = Math.abs(

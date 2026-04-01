@@ -3869,7 +3869,7 @@ var init_source = __esm({
 });
 
 // src/utils/settings/index.ts
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 function ensureConfigDir() {
@@ -50567,6 +50567,8 @@ var init_openai = __esm({
 
 // src/providers/client.ts
 function getProviderClient(config) {
+  if (!config.apiKey) throw new Error("API Key \u672A\u914D\u7F6E\uFF0C\u8BF7\u5148\u901A\u8FC7\u8BBE\u7F6E\u754C\u9762\u914D\u7F6E API Key");
+  if (!config.baseURL) throw new Error("Provider Base URL \u672A\u914D\u7F6E\uFF0C\u8BF7\u68C0\u67E5 Provider \u8BBE\u7F6E");
   const configKey = `${config.baseURL}::${config.apiKey}`;
   const currentKey = _currentConfig ? `${_currentConfig.baseURL}::${_currentConfig.apiKey}` : null;
   if (!_client || configKey !== currentKey) {
@@ -56418,7 +56420,7 @@ ${input.old_string}`,
               isError: true
             };
           }
-          const newContent = content.replace(input.old_string, input.new_string);
+          const newContent = content.replace(input.old_string, () => input.new_string);
           writeFileSync2(filePath, newContent, "utf8");
           const linesChanged = Math.abs(
             input.new_string.split("\n").length - input.old_string.split("\n").length
@@ -56437,11 +56439,12 @@ ${input.old_string}`,
 // src/tools/FileWriteTool/index.ts
 import { writeFileSync as writeFileSync3, mkdirSync as mkdirSync2 } from "fs";
 import * as path3 from "path";
-var inputSchema4, FileWriteTool;
+var MAX_FILE_SIZE_BYTES, inputSchema4, FileWriteTool;
 var init_FileWriteTool = __esm({
   "src/tools/FileWriteTool/index.ts"() {
     "use strict";
     init_zod();
+    MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
     inputSchema4 = external_exports.object({
       file_path: external_exports.string().describe("Path to write the file to"),
       content: external_exports.string().describe("Full content to write to the file")
@@ -56453,6 +56456,9 @@ var init_FileWriteTool = __esm({
       async execute(input, context) {
         const filePath = path3.isAbsolute(input.file_path) ? input.file_path : path3.join(context.cwd, input.file_path);
         try {
+          if (Buffer.byteLength(input.content, "utf8") > MAX_FILE_SIZE_BYTES) {
+            return { content: `Content too large (exceeds 5 MB). Split into smaller writes.`, isError: true };
+          }
           mkdirSync2(path3.dirname(filePath), { recursive: true });
           writeFileSync3(filePath, input.content, "utf8");
           const lines = input.content.split("\n").length;
@@ -56654,7 +56660,7 @@ var init_GlobTool = __esm({
             cwd: basePath,
             withFileTypes: false,
             exclude: (p2) => {
-              const str2 = typeof p2 === "string" ? p2 : String(p2);
+              const str2 = typeof p2 === "string" ? p2 : p2.name;
               const alwaysExclude = str2.includes("node_modules") || str2.includes(".git");
               if (!input.exclude) return alwaysExclude;
               return alwaysExclude || str2.includes(input.exclude);
@@ -56681,7 +56687,7 @@ var init_GlobTool = __esm({
 });
 
 // src/tools/LSTool/index.ts
-import { readdirSync, statSync as statSync2 } from "fs";
+import { readdirSync, statSync as statSync2, existsSync as existsSync5 } from "fs";
 import * as path6 from "path";
 function isDir(p2) {
   try {
@@ -56745,6 +56751,9 @@ var init_LSTool = __esm({
             }
           };
           var listDir = listDir2;
+          if (!existsSync5(dirPath) || !isDir(dirPath)) {
+            return { content: `Directory not found: ${dirPath}`, isError: true };
+          }
           const lines = [`// Directory: ${dirPath}
 `];
           let count = 0;
@@ -56782,6 +56791,15 @@ var init_WebFetchTool = __esm({
       inputSchema: inputSchema8,
       async execute(input, _context) {
         const maxLength = input.max_length ?? MAX_RESPONSE_CHARS;
+        let parsedUrl;
+        try {
+          parsedUrl = new URL(input.url);
+        } catch {
+          return { content: `Invalid URL: ${input.url}`, isError: true };
+        }
+        if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+          return { content: `Unsupported protocol "${parsedUrl.protocol}". Only http and https are allowed.`, isError: true };
+        }
         try {
           const controller = new AbortController();
           const timer = setTimeout(() => controller.abort(), TIMEOUT_MS2);
@@ -56817,12 +56835,12 @@ var init_WebFetchTool = __esm({
 });
 
 // src/tools/TodoWriteTool/index.ts
-import { readFileSync as readFileSync4, writeFileSync as writeFileSync4, existsSync as existsSync5, mkdirSync as mkdirSync3 } from "fs";
+import { readFileSync as readFileSync4, writeFileSync as writeFileSync4, existsSync as existsSync6, mkdirSync as mkdirSync3 } from "fs";
 import { homedir as homedir2 } from "os";
 import { join as join8 } from "path";
 function readTodos() {
   try {
-    if (!existsSync5(TODO_FILE)) return [];
+    if (!existsSync6(TODO_FILE)) return [];
     return JSON.parse(readFileSync4(TODO_FILE, "utf8"));
   } catch {
     return [];
@@ -56851,8 +56869,20 @@ var init_TodoWriteTool = __esm({
       description: "Write the todo list. Replaces the entire todo list with the provided todos. Use to create, update, or manage task tracking.",
       inputSchema: inputSchema9,
       async execute(input, _context) {
-        writeTodos(input.todos);
-        return { content: `Updated ${input.todos.length} todos` };
+        const ids = input.todos.map((t2) => t2.id);
+        const dupeIds = ids.filter((id, i2) => ids.indexOf(id) !== i2);
+        if (dupeIds.length > 0) {
+          return {
+            content: `Duplicate todo IDs detected: ${[...new Set(dupeIds)].join(", ")}`,
+            isError: true
+          };
+        }
+        try {
+          writeTodos(input.todos);
+          return { content: `Updated ${input.todos.length} todos` };
+        } catch (err) {
+          return { content: `Failed to write todos: ${String(err)}`, isError: true };
+        }
       }
     };
     TodoReadTool = {
@@ -57098,7 +57128,7 @@ async function withRetry(fn, maxRetries = 3, baseDelayMs = 1e3) {
     } catch (err) {
       lastError = err;
       const status = getStatusCode(err);
-      const isRetryable = status === 429 || status === 500 || status === 502 || status === 503 || status === 529;
+      const isRetryable = status === 429 || status === 500 || status === 502 || status === 503 || status === 504 || status === 529;
       if (!isRetryable || attempt === maxRetries) {
         throw err;
       }
@@ -57179,7 +57209,7 @@ async function* sendMessageStream(opts) {
     ...tools ? { tools, tool_choice: "auto" } : {},
     ...opts.temperature !== void 0 ? { temperature: opts.temperature } : {}
   };
-  const stream = await client.chat.completions.create(request);
+  const stream = await withRetry(() => client.chat.completions.create(request));
   yield* streamOpenAIToAnthropic(stream);
 }
 var init_claude = __esm({
@@ -57609,7 +57639,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.0.5";
+        const VERSION3 = "1.0.6";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -57673,7 +57703,7 @@ init_activeProvider();
 await init_provider();
 init_claude();
 init_updater();
-var VERSION2 = "1.0.5";
+var VERSION2 = "1.0.6";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);
