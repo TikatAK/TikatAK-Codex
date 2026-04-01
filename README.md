@@ -6,6 +6,9 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/TikatAK/TikatAK-Codex)](https://github.com/TikatAK/TikatAK-Codex/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Beta](https://img.shields.io/badge/status-beta-orange)
+
+> ⚠️ **Beta 版本**：核心功能已可用，但仍处于早期阶段，可能存在未知问题。欢迎提 [Issue](https://github.com/TikatAK/TikatAK-Codex/issues) 反馈。
 
 ---
 
