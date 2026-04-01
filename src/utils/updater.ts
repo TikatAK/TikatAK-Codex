@@ -62,14 +62,18 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateInf
  * Returns { ok, error }.
  */
 export async function performUpdate(): Promise<{ ok: boolean; error?: string }> {
-  // On Windows, npm is npm.cmd — must use shell:true or specify .cmd
   const isWindows = process.platform === 'win32'
-  const npmCmd = isWindows ? 'npm.cmd' : 'npm'
   try {
-    await execFileAsync(npmCmd, ['install', '-g', `github:${GITHUB_REPO}`], {
-      timeout: 120_000,
-      shell: isWindows, // fallback: let shell resolve the command on Windows
-    })
+    if (isWindows) {
+      // On Windows, npm is a batch script (npm.cmd). Use cmd.exe /c to invoke it safely.
+      await execFileAsync('cmd.exe', ['/c', 'npm', 'install', '-g', `github:${GITHUB_REPO}`], {
+        timeout: 120_000,
+      })
+    } else {
+      await execFileAsync('npm', ['install', '-g', `github:${GITHUB_REPO}`], {
+        timeout: 120_000,
+      })
+    }
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }
