@@ -5979,14 +5979,14 @@ var require_react_development = __commonJS({
               var thenableResult = result;
               var wasAwaited = false;
               var thenable = {
-                then: function(resolve, reject) {
+                then: function(resolve2, reject) {
                   wasAwaited = true;
                   thenableResult.then(function(returnValue2) {
                     popActScope(prevActScopeDepth);
                     if (actScopeDepth === 0) {
-                      recursivelyFlushAsyncActWork(returnValue2, resolve, reject);
+                      recursivelyFlushAsyncActWork(returnValue2, resolve2, reject);
                     } else {
-                      resolve(returnValue2);
+                      resolve2(returnValue2);
                     }
                   }, function(error2) {
                     popActScope(prevActScopeDepth);
@@ -6016,20 +6016,20 @@ var require_react_development = __commonJS({
                   ReactCurrentActQueue.current = null;
                 }
                 var _thenable = {
-                  then: function(resolve, reject) {
+                  then: function(resolve2, reject) {
                     if (ReactCurrentActQueue.current === null) {
                       ReactCurrentActQueue.current = [];
-                      recursivelyFlushAsyncActWork(returnValue, resolve, reject);
+                      recursivelyFlushAsyncActWork(returnValue, resolve2, reject);
                     } else {
-                      resolve(returnValue);
+                      resolve2(returnValue);
                     }
                   }
                 };
                 return _thenable;
               } else {
                 var _thenable2 = {
-                  then: function(resolve, reject) {
-                    resolve(returnValue);
+                  then: function(resolve2, reject) {
+                    resolve2(returnValue);
                   }
                 };
                 return _thenable2;
@@ -6045,7 +6045,7 @@ var require_react_development = __commonJS({
             actScopeDepth = prevActScopeDepth;
           }
         }
-        function recursivelyFlushAsyncActWork(returnValue, resolve, reject) {
+        function recursivelyFlushAsyncActWork(returnValue, resolve2, reject) {
           {
             var queue = ReactCurrentActQueue.current;
             if (queue !== null) {
@@ -6054,16 +6054,16 @@ var require_react_development = __commonJS({
                 enqueueTask(function() {
                   if (queue.length === 0) {
                     ReactCurrentActQueue.current = null;
-                    resolve(returnValue);
+                    resolve2(returnValue);
                   } else {
-                    recursivelyFlushAsyncActWork(returnValue, resolve, reject);
+                    recursivelyFlushAsyncActWork(returnValue, resolve2, reject);
                   }
                 });
               } catch (error2) {
                 reject(error2);
               }
             } else {
-              resolve(returnValue);
+              resolve2(returnValue);
             }
           }
         }
@@ -36330,8 +36330,8 @@ var init_ink = __esm({
         }
       }
       async waitUntilExit() {
-        this.exitPromise ||= new Promise((resolve, reject) => {
-          this.resolveExitPromise = resolve;
+        this.exitPromise ||= new Promise((resolve2, reject) => {
+          this.resolveExitPromise = resolve2;
           this.rejectExitPromise = reject;
         });
         return this.exitPromise;
@@ -39430,7 +39430,7 @@ var require_lib2 = __commonJS({
       let accum = [];
       let accumBytes = 0;
       let abort = false;
-      return new Body.Promise(function(resolve, reject) {
+      return new Body.Promise(function(resolve2, reject) {
         let resTimeout;
         if (_this4.timeout) {
           resTimeout = setTimeout(function() {
@@ -39464,7 +39464,7 @@ var require_lib2 = __commonJS({
           }
           clearTimeout(resTimeout);
           try {
-            resolve(Buffer.concat(accum, accumBytes));
+            resolve2(Buffer.concat(accum, accumBytes));
           } catch (err) {
             reject(new FetchError(`Could not create Buffer from response body for ${_this4.url}: ${err.message}`, "system", err));
           }
@@ -40139,7 +40139,7 @@ var require_lib2 = __commonJS({
         throw new Error("native promise missing, set fetch.Promise to your favorite alternative");
       }
       Body.Promise = fetch3.Promise;
-      return new fetch3.Promise(function(resolve, reject) {
+      return new fetch3.Promise(function(resolve2, reject) {
         const request = new Request3(url, opts);
         const options = getNodeRequestOptions(request);
         const send = (options.protocol === "https:" ? https : http).request;
@@ -40272,7 +40272,7 @@ var require_lib2 = __commonJS({
                   requestOpts.body = void 0;
                   requestOpts.headers.delete("content-length");
                 }
-                resolve(fetch3(new Request3(locationURL, requestOpts)));
+                resolve2(fetch3(new Request3(locationURL, requestOpts)));
                 finalize();
                 return;
             }
@@ -40293,7 +40293,7 @@ var require_lib2 = __commonJS({
           const codings = headers.get("Content-Encoding");
           if (!request.compress || request.method === "HEAD" || codings === null || res.statusCode === 204 || res.statusCode === 304) {
             response = new Response3(body, response_options);
-            resolve(response);
+            resolve2(response);
             return;
           }
           const zlibOptions = {
@@ -40303,7 +40303,7 @@ var require_lib2 = __commonJS({
           if (codings == "gzip" || codings == "x-gzip") {
             body = body.pipe(zlib.createGunzip(zlibOptions));
             response = new Response3(body, response_options);
-            resolve(response);
+            resolve2(response);
             return;
           }
           if (codings == "deflate" || codings == "x-deflate") {
@@ -40315,12 +40315,12 @@ var require_lib2 = __commonJS({
                 body = body.pipe(zlib.createInflateRaw());
               }
               response = new Response3(body, response_options);
-              resolve(response);
+              resolve2(response);
             });
             raw.on("end", function() {
               if (!response) {
                 response = new Response3(body, response_options);
-                resolve(response);
+                resolve2(response);
               }
             });
             return;
@@ -40328,11 +40328,11 @@ var require_lib2 = __commonJS({
           if (codings == "br" && typeof zlib.createBrotliDecompress === "function") {
             body = body.pipe(zlib.createBrotliDecompress());
             response = new Response3(body, response_options);
-            resolve(response);
+            resolve2(response);
             return;
           }
           response = new Response3(body, response_options);
-          resolve(response);
+          resolve2(response);
         });
         writeToStream(req, request);
       });
@@ -45013,8 +45013,8 @@ var init_core = __esm({
     init();
     APIPromise = class _APIPromise extends Promise {
       constructor(responsePromise, parseResponse2 = defaultParseResponse) {
-        super((resolve) => {
-          resolve(null);
+        super((resolve2) => {
+          resolve2(null);
         });
         this.responsePromise = responsePromise;
         this.parseResponse = parseResponse2;
@@ -45565,7 +45565,7 @@ var init_core = __esm({
     isAbsoluteURL = (url) => {
       return startsWithSchemeRegexp.test(url);
     };
-    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    sleep = (ms) => new Promise((resolve2) => setTimeout(resolve2, ms));
     validatePositiveInteger = (name, n2) => {
       if (typeof n2 !== "number" || !Number.isInteger(n2)) {
         throw new OpenAIError(`${name} must be an integer`);
@@ -46026,12 +46026,12 @@ var init_EventStream = __esm({
         _EventStream_errored.set(this, false);
         _EventStream_aborted.set(this, false);
         _EventStream_catchingPromiseCreated.set(this, false);
-        __classPrivateFieldSet7(this, _EventStream_connectedPromise, new Promise((resolve, reject) => {
-          __classPrivateFieldSet7(this, _EventStream_resolveConnectedPromise, resolve, "f");
+        __classPrivateFieldSet7(this, _EventStream_connectedPromise, new Promise((resolve2, reject) => {
+          __classPrivateFieldSet7(this, _EventStream_resolveConnectedPromise, resolve2, "f");
           __classPrivateFieldSet7(this, _EventStream_rejectConnectedPromise, reject, "f");
         }), "f");
-        __classPrivateFieldSet7(this, _EventStream_endPromise, new Promise((resolve, reject) => {
-          __classPrivateFieldSet7(this, _EventStream_resolveEndPromise, resolve, "f");
+        __classPrivateFieldSet7(this, _EventStream_endPromise, new Promise((resolve2, reject) => {
+          __classPrivateFieldSet7(this, _EventStream_resolveEndPromise, resolve2, "f");
           __classPrivateFieldSet7(this, _EventStream_rejectEndPromise, reject, "f");
         }), "f");
         __classPrivateFieldGet8(this, _EventStream_connectedPromise, "f").catch(() => {
@@ -46115,11 +46115,11 @@ var init_EventStream = __esm({
        *   const message = await stream.emitted('message') // rejects if the stream errors
        */
       emitted(event) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           __classPrivateFieldSet7(this, _EventStream_catchingPromiseCreated, true, "f");
           if (event !== "error")
             this.once("error", reject);
-          this.once(event, resolve);
+          this.once(event, resolve2);
         });
       }
       async done() {
@@ -46261,7 +46261,7 @@ var init_AssistantStream = __esm({
               if (done) {
                 return { value: void 0, done: true };
               }
-              return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+              return new Promise((resolve2, reject) => readQueue.push({ resolve: resolve2, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
             }
             const chunk = pushQueue.shift();
             return { value: chunk, done: false };
@@ -48004,7 +48004,7 @@ var init_ChatCompletionStream = __esm({
               if (done) {
                 return { value: void 0, done: true };
               }
-              return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+              return new Promise((resolve2, reject) => readQueue.push({ resolve: resolve2, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
             }
             const chunk = pushQueue.shift();
             return { value: chunk, done: false };
@@ -49857,7 +49857,7 @@ var init_ResponseStream = __esm({
               if (done) {
                 return { value: void 0, done: true };
               }
-              return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
+              return new Promise((resolve2, reject) => readQueue.push({ resolve: resolve2, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
             }
             const event = pushQueue.shift();
             return { value: event, done: false };
@@ -51844,16 +51844,16 @@ async function providerCommand(subcommand) {
   }
 }
 async function runProviderSetUI() {
-  return new Promise((resolve) => {
+  return new Promise((resolve2) => {
     const { unmount } = render_default(
       import_react23.default.createElement(ProviderConfigUI, {
         onComplete: () => {
           unmount();
-          resolve();
+          resolve2();
         },
         onCancel: () => {
           unmount();
-          resolve();
+          resolve2();
         }
       })
     );
@@ -56944,6 +56944,11 @@ var init_TodoWriteTool = __esm({
 });
 
 // src/services/api/toolExecutor.ts
+var toolExecutor_exports = {};
+__export(toolExecutor_exports, {
+  executeTool: () => executeTool,
+  executeTools: () => executeTools
+});
 function withTimeout(promise, ms, toolName) {
   let timer;
   const timeoutPromise = new Promise((_2, reject) => {
@@ -57202,7 +57207,7 @@ function getRetryAfterMs(err) {
   return void 0;
 }
 function sleep2(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve2) => setTimeout(resolve2, ms));
 }
 function jitter(maxMs) {
   return Math.random() * maxMs;
@@ -57562,14 +57567,67 @@ var init_diagnose = __esm({
 });
 
 // src/utils/cwd.ts
+var cwd_exports = {};
+__export(cwd_exports, {
+  getCwd: () => getCwd,
+  setCwd: () => setCwd2
+});
+import { resolve } from "path";
 function getCwd() {
   return _cwd;
+}
+function setCwd2(dir) {
+  _cwd = resolve(dir);
 }
 var _cwd;
 var init_cwd = __esm({
   "src/utils/cwd.ts"() {
     "use strict";
     _cwd = process.cwd();
+  }
+});
+
+// src/utils/context/index.ts
+var context_exports = {};
+__export(context_exports, {
+  compressContext: () => compressContext,
+  estimateTokens: () => estimateTokens
+});
+function compressContext(messages) {
+  if (messages.length <= MAX_MESSAGES_BEFORE_COMPRESS) {
+    return { messages, compressed: false };
+  }
+  const kept = messages.slice(-MIN_MESSAGES_TO_KEEP);
+  const droppedCount = messages.length - MIN_MESSAGES_TO_KEEP;
+  const summaryMsg = {
+    role: "user",
+    content: `[\u7CFB\u7EDF: \u5BF9\u8BDD\u5386\u53F2\u5DF2\u538B\u7F29\uFF0C\u524D ${droppedCount} \u6761\u6D88\u606F\u5DF2\u7701\u7565\u4EE5\u8282\u7701 token\u3002\u8BF7\u57FA\u4E8E\u4EE5\u4E0B\u5BF9\u8BDD\u7EE7\u7EED\u3002]`
+  };
+  return { messages: [summaryMsg, ...kept], compressed: true };
+}
+function estimateTokens(messages) {
+  let chars = 0;
+  for (const msg of messages) {
+    if (typeof msg.content === "string") {
+      chars += msg.content.length;
+    } else if (Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (typeof block === "object" && block !== null) {
+          const b2 = block;
+          if (typeof b2["text"] === "string") chars += b2["text"].length;
+          else if (typeof b2["content"] === "string") chars += b2["content"].length;
+        }
+      }
+    }
+  }
+  return Math.ceil(chars / 4);
+}
+var MAX_MESSAGES_BEFORE_COMPRESS, MIN_MESSAGES_TO_KEEP;
+var init_context = __esm({
+  "src/utils/context/index.ts"() {
+    "use strict";
+    MAX_MESSAGES_BEFORE_COMPRESS = 40;
+    MIN_MESSAGES_TO_KEEP = 10;
   }
 });
 
@@ -57673,45 +57731,6 @@ var init_sessions2 = __esm({
     CONFIG_DIR2 = join9(homedir3(), ".tikat-codex");
     SESSIONS_DIR = join9(CONFIG_DIR2, "sessions");
     MAX_SESSIONS = 20;
-  }
-});
-
-// src/utils/context/index.ts
-function compressContext(messages) {
-  if (messages.length <= MAX_MESSAGES_BEFORE_COMPRESS) {
-    return { messages, compressed: false };
-  }
-  const kept = messages.slice(-MIN_MESSAGES_TO_KEEP);
-  const droppedCount = messages.length - MIN_MESSAGES_TO_KEEP;
-  const summaryMsg = {
-    role: "user",
-    content: `[\u7CFB\u7EDF: \u5BF9\u8BDD\u5386\u53F2\u5DF2\u538B\u7F29\uFF0C\u524D ${droppedCount} \u6761\u6D88\u606F\u5DF2\u7701\u7565\u4EE5\u8282\u7701 token\u3002\u8BF7\u57FA\u4E8E\u4EE5\u4E0B\u5BF9\u8BDD\u7EE7\u7EED\u3002]`
-  };
-  return { messages: [summaryMsg, ...kept], compressed: true };
-}
-function estimateTokens(messages) {
-  let chars = 0;
-  for (const msg of messages) {
-    if (typeof msg.content === "string") {
-      chars += msg.content.length;
-    } else if (Array.isArray(msg.content)) {
-      for (const block of msg.content) {
-        if (typeof block === "object" && block !== null) {
-          const b2 = block;
-          if (typeof b2["text"] === "string") chars += b2["text"].length;
-          else if (typeof b2["content"] === "string") chars += b2["content"].length;
-        }
-      }
-    }
-  }
-  return Math.ceil(chars / 4);
-}
-var MAX_MESSAGES_BEFORE_COMPRESS, MIN_MESSAGES_TO_KEEP;
-var init_context = __esm({
-  "src/utils/context/index.ts"() {
-    "use strict";
-    MAX_MESSAGES_BEFORE_COMPRESS = 40;
-    MIN_MESSAGES_TO_KEEP = 10;
   }
 });
 
@@ -58214,7 +58233,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.3.2";
+        const VERSION3 = "1.3.3";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -58360,7 +58379,7 @@ init_activeProvider();
 await init_provider();
 init_claude();
 init_updater();
-var VERSION2 = "1.3.2";
+var VERSION2 = "1.3.3";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);
@@ -58404,19 +58423,91 @@ program2.argument("[prompt]", "Optional prompt to run non-interactively").option
   }
 });
 async function runNonInteractive(prompt, model) {
+  const { executeTools: executeTools2 } = await Promise.resolve().then(() => (init_toolExecutor(), toolExecutor_exports));
+  const { getCwd: getCwd2 } = await Promise.resolve().then(() => (init_cwd(), cwd_exports));
+  const { compressContext: compressContext2 } = await Promise.resolve().then(() => (init_context(), context_exports));
+  const cwd2 = getCwd2();
+  const SYSTEM_PROMPT2 = `You are Tikat-Codex, an expert AI coding assistant.
+You have access to tools to read files, write files, run bash commands, search code, and browse the web.
+Always use tools to actually perform tasks rather than just describing what to do.
+Current working directory will be provided in each request.`;
+  const MAX_ROUNDS = 50;
+  let messages = [
+    { role: "user", content: prompt }
+  ];
   try {
-    const stream = sendMessageStream({
-      messages: [{ role: "user", content: prompt }],
-      ...model !== void 0 ? { model } : {}
-    });
-    for await (const event of stream) {
-      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        process.stdout.write(event.delta.text);
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const { messages: compressed } = compressContext2(messages);
+      const stream = sendMessageStream({
+        messages: compressed,
+        system: `${SYSTEM_PROMPT2}
+Working directory: ${cwd2}`,
+        ...model !== void 0 ? { model } : {}
+      });
+      let textContent = "";
+      let stopReason = "end_turn";
+      const toolAccumulator = /* @__PURE__ */ new Map();
+      for await (const event of stream) {
+        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          process.stdout.write(event.delta.text);
+          textContent += event.delta.text;
+        } else if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
+          const tb = event.content_block;
+          toolAccumulator.set(event.index, { id: tb.id, name: tb.name, argsJson: "" });
+          process.stderr.write(source_default.yellow(`
+\u{1F527} ${tb.name}...`));
+        } else if (event.type === "content_block_delta" && event.delta.type === "input_json_delta") {
+          const acc = toolAccumulator.get(event.index);
+          if (acc) acc.argsJson += event.delta.partial_json;
+        } else if (event.type === "message_delta") {
+          stopReason = event.delta.stop_reason;
+        }
       }
+      const contentBlocks = [];
+      if (textContent) contentBlocks.push({ type: "text", text: textContent });
+      const toolUseBlocks = [];
+      for (const [, acc] of toolAccumulator) {
+        let parsedInput = {};
+        try {
+          parsedInput = JSON.parse(acc.argsJson || "{}");
+        } catch {
+          parsedInput = {};
+        }
+        const tb = {
+          type: "tool_use",
+          id: acc.id,
+          name: acc.name,
+          input: parsedInput
+        };
+        contentBlocks.push(tb);
+        toolUseBlocks.push(tb);
+      }
+      if (toolUseBlocks.length === 0 || stopReason === "end_turn") {
+        process.stdout.write("\n");
+        break;
+      }
+      const results = await executeTools2(toolUseBlocks, { cwd: cwd2, signal: void 0 });
+      for (const r2 of results) {
+        const icon = r2.is_error ? source_default.red("\u2717") : source_default.green("\u2713");
+        process.stderr.write(` ${icon}
+`);
+      }
+      messages = [
+        ...messages,
+        { role: "assistant", content: contentBlocks },
+        {
+          role: "user",
+          content: results.map((r2) => ({
+            type: "tool_result",
+            tool_use_id: r2.tool_use_id,
+            content: r2.content,
+            is_error: r2.is_error
+          }))
+        }
+      ];
     }
-    process.stdout.write("\n");
   } catch (err) {
-    console.error(source_default.red("Error:"), err instanceof Error ? err.message : String(err));
+    console.error(source_default.red("\nError:"), err instanceof Error ? err.message : String(err));
     process.exit(1);
   }
 }

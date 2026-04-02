@@ -79,20 +79,95 @@ program
   })
 
 async function runNonInteractive(prompt: string, model?: string): Promise<void> {
-  try {
-    const stream = sendMessageStream({
-      messages: [{ role: 'user', content: prompt }],
-      ...(model !== undefined ? { model } : {}),
-    })
+  const { executeTools } = await import('./services/api/toolExecutor.js')
+  const { getCwd } = await import('./utils/cwd.js')
+  const { compressContext } = await import('./utils/context/index.js')
+  const cwd = getCwd()
 
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        process.stdout.write(event.delta.text)
+  const SYSTEM_PROMPT = `You are Tikat-Codex, an expert AI coding assistant.
+You have access to tools to read files, write files, run bash commands, search code, and browse the web.
+Always use tools to actually perform tasks rather than just describing what to do.
+Current working directory will be provided in each request.`
+
+  const MAX_ROUNDS = 50
+  let messages: import('./adapters/openai/index.js').AnthropicMessage[] = [
+    { role: 'user', content: prompt },
+  ]
+
+  try {
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const { messages: compressed } = compressContext(messages)
+
+      const stream = sendMessageStream({
+        messages: compressed,
+        system: `${SYSTEM_PROMPT}\nWorking directory: ${cwd}`,
+        ...(model !== undefined ? { model } : {}),
+      })
+
+      let textContent = ''
+      let stopReason = 'end_turn'
+      const toolAccumulator = new Map<number, { id: string; name: string; argsJson: string }>()
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          process.stdout.write(event.delta.text)
+          textContent += event.delta.text
+        } else if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
+          const tb = event.content_block
+          toolAccumulator.set(event.index, { id: tb.id, name: tb.name, argsJson: '' })
+          process.stderr.write(chalk.yellow(`\n🔧 ${tb.name}...`))
+        } else if (event.type === 'content_block_delta' && event.delta.type === 'input_json_delta') {
+          const acc = toolAccumulator.get(event.index)
+          if (acc) acc.argsJson += event.delta.partial_json
+        } else if (event.type === 'message_delta') {
+          stopReason = event.delta.stop_reason
+        }
       }
+
+      // Build content blocks
+      const contentBlocks: import('./adapters/openai/responseAdapter.js').AnthropicBlock[] = []
+      if (textContent) contentBlocks.push({ type: 'text', text: textContent })
+      const toolUseBlocks: import('./adapters/openai/responseAdapter.js').AnthropicToolUseBlock[] = []
+      for (const [, acc] of toolAccumulator) {
+        let parsedInput: unknown = {}
+        try { parsedInput = JSON.parse(acc.argsJson || '{}') } catch { parsedInput = {} }
+        const tb: import('./adapters/openai/responseAdapter.js').AnthropicToolUseBlock = {
+          type: 'tool_use', id: acc.id, name: acc.name, input: parsedInput,
+        }
+        contentBlocks.push(tb)
+        toolUseBlocks.push(tb)
+      }
+
+      // Done — no tool calls
+      if (toolUseBlocks.length === 0 || stopReason === 'end_turn') {
+        process.stdout.write('\n')
+        break
+      }
+
+      // Execute tools
+      const results = await executeTools(toolUseBlocks, { cwd, signal: undefined })
+      for (const r of results) {
+        const icon = r.is_error ? chalk.red('✗') : chalk.green('✓')
+        process.stderr.write(` ${icon}\n`)
+      }
+
+      // Append to history
+      messages = [
+        ...messages,
+        { role: 'assistant', content: contentBlocks },
+        {
+          role: 'user',
+          content: results.map(r => ({
+            type: 'tool_result' as const,
+            tool_use_id: r.tool_use_id,
+            content: r.content,
+            is_error: r.is_error,
+          })),
+        },
+      ]
     }
-    process.stdout.write('\n')
   } catch (err) {
-    console.error(chalk.red('Error:'), err instanceof Error ? err.message : String(err))
+    console.error(chalk.red('\nError:'), err instanceof Error ? err.message : String(err))
     process.exit(1)
   }
 }
