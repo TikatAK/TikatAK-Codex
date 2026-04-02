@@ -4,6 +4,17 @@
 
 ---
 
+## [1.2.1] - 2026-04-02
+
+### 新增
+- **自动化测试套件**：引入 `vitest`，覆盖 7 个核心模块，共 38 个测试用例（100% 通过）
+  - `highlight`、`context`、`sessions`、`withRetry`、`streamAdapter`、`requestAdapter`、`responseAdapter`
+
+### 修复
+- **`generateId()` 同毫秒碰撞 bug**：`sessions` ID 生成精度从秒级（`slice(0,19)`）提升到毫秒级（`slice(0,23)`），防止同一秒内创建多个会话时 ID 重复覆盖
+
+---
+
 ## [1.2.0] - 2026-04-02
 
 ### 新增

@@ -57572,7 +57572,7 @@ function sessionFile(id) {
   return join9(SESSIONS_DIR, `${id}.json`);
 }
 function generateId() {
-  return (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  return (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").slice(0, 23);
 }
 function deriveTitle(history) {
   const first = history.find((m2) => m2.role === "user");
@@ -58200,7 +58200,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.2.0";
+        const VERSION3 = "1.2.1";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -58346,7 +58346,7 @@ init_activeProvider();
 await init_provider();
 init_claude();
 init_updater();
-var VERSION2 = "1.2.0";
+var VERSION2 = "1.2.1";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);

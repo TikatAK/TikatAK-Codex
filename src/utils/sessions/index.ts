@@ -30,9 +30,9 @@ function sessionFile(id: string): string {
   return join(SESSIONS_DIR, `${id}.json`)
 }
 
-/** Generate a simple time-based session ID */
+/** Generate a simple time-based session ID (millisecond precision) */
 function generateId(): string {
-  return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 23)
 }
 
 /** Derive a short title from the first user message */
