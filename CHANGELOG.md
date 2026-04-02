@@ -4,6 +4,36 @@
 
 ---
 
+## [1.4.5] - 2026-04-02
+
+### 改进
+- **完整复刻 Claude Code 系统提示词**：将 `BASE_SYSTEM_PROMPT` 从约 150 行的自定义版本重写为严格对照 Claude Code 生产版的 7 个章节结构：
+  - `# System`：工具渲染规则、权限模式说明、`<system-reminder>` 标签处理、**提示注入警告**、自动上下文压缩说明
+  - `# Doing tasks`：不读就不改、不估时间、**忠实报告**（不允许谎称测试通过）、三行代码好过过早抽象、删除而非用 hack 保持兼容
+  - `# Executing actions with care`：可逆性/爆炸半径框架、第三方上传提醒、锁文件要调查不要删、"measure twice, cut once"
+  - `# Using your tools`：专用工具优先、并行调用最大化、SubAgent 使用规范
+  - `# Tone and style`：`file_path:line_number` 格式、`owner/repo#123` 格式、工具调用前不加冒号
+  - `# Output efficiency`：原版简洁性规则
+  - `# Executing actions with care`：完整的可逆性风险分级清单
+
+### 重构
+- **提取共享 Agent Loop**：新增 `src/services/agent/loop.ts`，将原本在 `main.tsx` 和 `repl/index.tsx` 中各自重复的约 100 行 agent 循环代码合并为统一的 `runAgentLoop()` 函数
+  - 新增 `onTurnComplete` 回调（含每轮 `inputTokens`/`outputTokens`），在 `message_start` 事件中捕获 token 用量
+  - `repl/index.tsx` 的 160 行重复循环替换为 `runSharedAgentLoop()` + 5 个语义清晰的回调（约 60 行）
+  - 移除 `repl/index.tsx` 中 6 个重复 import（`sendMessageStream`、`executeTools`、`compressContext` 等）
+  - 移除 `main.tsx` 中孤立的 `sendMessageStream` import
+
+---
+
+## [1.4.4] - 2026-04-02
+
+### 修复
+- **npm 11+ 全局安装后 `dist/cli.js` 缺失（根治）**：npm 11 将 GitHub git dep 安装为指向临时目录的符号链接/Junction，安装完成后临时目录被清理，链接悬空导致 `Cannot find module dist/cli.js`。改为通过 GitHub Release tarball 安装（`npm install -g https://github.com/.../tikat-codex-x.x.x.tgz`），tarball 包含完整文件，不依赖临时目录
+- 新增 `files` 字段至 `package.json`，明确指定 `["dist/", "README.md", "CHANGELOG.md"]` 随包发布
+- 更新 README 安装命令为 tarball 方式
+
+---
+
 ## [1.4.3] - 2026-04-02
 
 ### 修复
@@ -12,10 +42,10 @@
 
 ---
 
-
+## [1.4.2] - 2026-04-02
 
 ### 修复
-- **Windows 更新 EPERM 错误**：`codex update` 在 Windows 上会因当前进程占用 `dist/cli.js` 导致 npm 报 EPERM (-4048) 权限错误。修复方案：改为将 npm install 命令以完全独立的后台进程启动（延迟 3 秒等待当前进程退出释放文件锁），然后当前进程立即退出。更新界面新增"后台更新已启动"提示状态。
+- **Windows 更新 EPERM 错误**：`codex update` 在 Windows 上会因当前进程占用 `dist/cli.js` 导致 npm 报 EPERM (-4048) 权限错误。修复方案：改为将 npm install 命令以完全独立的后台进程启动（延迟 3 秒等待当前进程退出释放文件锁），然后当前进程立即退出。更新界面新增"后台更新已启动"提示状态
 - **内部命名残留清理**：`prompts.ts` 参数名 `claudeMd` → `projectInstructions`；注释中 "CLAUDE.md" → "TIKAT.md"；`TodoWriteTool` 目录路径 `.Tikat-Codex` → `.tikat-codex`（小写，跨平台一致）
 
 ---
