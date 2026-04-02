@@ -1,0 +1,29 @@
+# Source files (dist/ is the only thing needed at runtime)
+src/
+tsconfig.json
+tsconfig.build.json
+build.mjs
+vitest.config.ts
+
+# Tests
+src/__tests__/
+
+# Dev / CI
+.github/
+.vscode/
+.idea/
+
+# Logs and temp
+*.log
+npm-debug.log*
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs that aren't needed at runtime
+进度跟踪.md
+可实现功能总表.md
+项目启动计划.md
+自定义提供商改造计划书.md
