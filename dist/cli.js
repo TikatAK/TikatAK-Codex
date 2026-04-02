@@ -56396,8 +56396,8 @@ var init_FileEditTool = __esm({
             };
           }
           try {
-            const { mkdirSync: mkdirSync4 } = await import("fs");
-            mkdirSync4(path2.dirname(filePath), { recursive: true });
+            const { mkdirSync: mkdirSync5 } = await import("fs");
+            mkdirSync5(path2.dirname(filePath), { recursive: true });
             writeFileSync2(filePath, input.new_string, "utf8");
             return { content: `Created file: ${input.file_path}` };
           } catch (err) {
@@ -57411,6 +57411,109 @@ var init_cwd = __esm({
   }
 });
 
+// src/utils/sessions/index.ts
+import { existsSync as existsSync7, mkdirSync as mkdirSync4, readFileSync as readFileSync5, writeFileSync as writeFileSync5, readdirSync as readdirSync2, unlinkSync as unlinkSync2 } from "fs";
+import { homedir as homedir3 } from "os";
+import { join as join9 } from "path";
+function ensureSessionsDir() {
+  if (!existsSync7(SESSIONS_DIR)) {
+    mkdirSync4(SESSIONS_DIR, { recursive: true, mode: 448 });
+  }
+}
+function sessionFile(id) {
+  return join9(SESSIONS_DIR, `${id}.json`);
+}
+function generateId() {
+  return (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").slice(0, 19);
+}
+function deriveTitle(history) {
+  const first = history.find((m2) => m2.role === "user");
+  if (!first) return "\u65B0\u5BF9\u8BDD";
+  const content = typeof first.content === "string" ? first.content : "\u65B0\u5BF9\u8BDD";
+  return content.slice(0, 40) + (content.length > 40 ? "\u2026" : "");
+}
+function saveSession(id, history, model) {
+  ensureSessionsDir();
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const sessionId = id ?? generateId();
+  const filePath = sessionFile(sessionId);
+  let createdAt = now;
+  if (id && existsSync7(filePath)) {
+    try {
+      const existing = JSON.parse(readFileSync5(filePath, "utf8"));
+      createdAt = existing.createdAt;
+    } catch {
+    }
+  }
+  const meta = {
+    id: sessionId,
+    title: deriveTitle(history),
+    createdAt,
+    updatedAt: now,
+    messageCount: history.length,
+    model
+  };
+  const session = { ...meta, history };
+  writeFileSync5(filePath, JSON.stringify(session, null, 2), { encoding: "utf8", mode: 384 });
+  pruneOldSessions();
+  return meta;
+}
+function loadSession(id) {
+  const filePath = sessionFile(id);
+  if (!existsSync7(filePath)) return null;
+  try {
+    return JSON.parse(readFileSync5(filePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+function listSessions() {
+  if (!existsSync7(SESSIONS_DIR)) return [];
+  const files = readdirSync2(SESSIONS_DIR).filter((f2) => f2.endsWith(".json"));
+  const sessions = [];
+  for (const file of files) {
+    try {
+      const raw = JSON.parse(readFileSync5(join9(SESSIONS_DIR, file), "utf8"));
+      sessions.push({
+        id: raw.id,
+        title: raw.title,
+        createdAt: raw.createdAt,
+        updatedAt: raw.updatedAt,
+        messageCount: raw.messageCount,
+        model: raw.model
+      });
+    } catch {
+    }
+  }
+  return sessions.sort((a2, b2) => b2.updatedAt.localeCompare(a2.updatedAt));
+}
+function deleteSession(id) {
+  const filePath = sessionFile(id);
+  if (!existsSync7(filePath)) return false;
+  try {
+    unlinkSync2(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function pruneOldSessions() {
+  const sessions = listSessions();
+  if (sessions.length <= MAX_SESSIONS) return;
+  for (const s2 of sessions.slice(MAX_SESSIONS)) {
+    deleteSession(s2.id);
+  }
+}
+var CONFIG_DIR2, SESSIONS_DIR, MAX_SESSIONS;
+var init_sessions2 = __esm({
+  "src/utils/sessions/index.ts"() {
+    "use strict";
+    CONFIG_DIR2 = join9(homedir3(), ".tikatak-codex");
+    SESSIONS_DIR = join9(CONFIG_DIR2, "sessions");
+    MAX_SESSIONS = 20;
+  }
+});
+
 // src/repl/index.tsx
 var repl_exports = {};
 __export(repl_exports, {
@@ -57420,16 +57523,28 @@ async function launchRepl(opts = {}) {
   const { waitUntilExit } = render_default(import_react25.default.createElement(ReplApp, opts));
   await waitUntilExit();
 }
-function ReplApp({ initialPrompt, model: initialModel }) {
+function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
   const { exit } = use_app_default();
   const cwd2 = getCwd();
+  const restoredSession = resumeSessionId ? loadSession(resumeSessionId) : null;
+  const restoredDisplay = restoredSession ? restoredSession.history.filter((m2) => m2.role === "user" || m2.role === "assistant").flatMap((m2) => {
+    if (m2.role === "user") {
+      const c2 = typeof m2.content === "string" ? m2.content : "[\u590D\u6742\u6D88\u606F]";
+      return [{ role: "user", content: c2 }];
+    }
+    const blocks = Array.isArray(m2.content) ? m2.content : [];
+    const text = blocks.filter((b2) => b2.type === "text").map((b2) => b2.text).join("");
+    return text ? [{ role: "assistant", content: text }] : [];
+  }) : [];
   const [state, setState] = (0, import_react25.useState)({
-    history: [],
-    display: [],
+    history: restoredSession?.history ?? [],
+    display: restoredDisplay,
+    streamingText: "",
     inputBuffer: "",
-    model: initialModel,
+    model: restoredSession?.model ?? initialModel,
     status: { type: "idle" },
-    info: null
+    info: restoredSession ? `\u2705 \u5DF2\u6062\u590D\u4F1A\u8BDD: ${restoredSession.title}` : null,
+    sessionId: resumeSessionId ?? null
   });
   const runAgentLoop = (0, import_react25.useCallback)(async (userInput, currentState) => {
     const userMsg = { role: "user", content: userInput };
@@ -57438,41 +57553,84 @@ function ReplApp({ initialPrompt, model: initialModel }) {
       ...s2,
       history: messages,
       display: [...s2.display, { role: "user", content: userInput }],
+      streamingText: "",
       inputBuffer: "",
-      status: { type: "thinking" },
+      status: { type: "streaming" },
       info: null
     }));
     let loopCompleted = false;
     for (let round = 0; round < MAX_TOOL_ROUNDS2; round++) {
       try {
-        const response = await sendMessage({
+        const streamGen = sendMessageStream({
           messages,
           system: `${SYSTEM_PROMPT}
 Working directory: ${cwd2}`,
           model: currentState.model
         });
-        const textBlocks = response.content.filter((b2) => b2.type === "text");
-        const toolBlocks = response.content.filter((b2) => b2.type === "tool_use");
-        const textContent = textBlocks.map((b2) => b2.text).join("");
+        let textContent = "";
+        let inputTokens = 0;
+        let outputTokens = 0;
+        let stopReason = "end_turn";
+        const toolAccumulator = /* @__PURE__ */ new Map();
+        for await (const event of streamGen) {
+          if (event.type === "message_start") {
+            inputTokens = event.usage.input_tokens;
+          } else if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            const text = event.delta.text;
+            textContent += text;
+            setState((s2) => ({ ...s2, streamingText: s2.streamingText + text }));
+          } else if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
+            const tb = event.content_block;
+            toolAccumulator.set(event.index, { id: tb.id, name: tb.name, argsJson: "" });
+            setState((s2) => ({ ...s2, status: { type: "tool", toolName: tb.name } }));
+          } else if (event.type === "content_block_delta" && event.delta.type === "input_json_delta") {
+            const acc = toolAccumulator.get(event.index);
+            if (acc) acc.argsJson += event.delta.partial_json;
+          } else if (event.type === "message_delta") {
+            stopReason = event.delta.stop_reason;
+            outputTokens = event.usage.output_tokens;
+          }
+        }
         if (textContent) {
           setState((s2) => ({
             ...s2,
-            display: [...s2.display, { role: "assistant", content: textContent }]
+            streamingText: "",
+            display: [
+              ...s2.display,
+              {
+                role: "assistant",
+                content: textContent,
+                usage: { input: inputTokens, output: outputTokens }
+              }
+            ]
           }));
+        } else {
+          setState((s2) => ({ ...s2, streamingText: "" }));
         }
-        if (toolBlocks.length === 0 || response.stop_reason === "end_turn") {
-          messages = [...messages, { role: "assistant", content: response.content }];
-          setState((s2) => ({ ...s2, history: messages, status: { type: "idle" } }));
+        const contentBlocks = [];
+        if (textContent) {
+          contentBlocks.push({ type: "text", text: textContent });
+        }
+        const toolUseBlocks = [];
+        for (const [, acc] of toolAccumulator) {
+          let parsedInput = {};
+          try {
+            parsedInput = JSON.parse(acc.argsJson || "{}");
+          } catch {
+            parsedInput = {};
+          }
+          const tb = { type: "tool_use", id: acc.id, name: acc.name, input: parsedInput };
+          contentBlocks.push(tb);
+          toolUseBlocks.push(tb);
+        }
+        if (toolUseBlocks.length === 0 || stopReason === "end_turn") {
+          messages = [...messages, { role: "assistant", content: contentBlocks }];
+          const meta = saveSession(currentState.sessionId, messages, currentState.model);
+          setState((s2) => ({ ...s2, history: messages, status: { type: "idle" }, sessionId: meta.id }));
           loopCompleted = true;
           break;
         }
-        for (const tool of toolBlocks) {
-          setState((s2) => ({
-            ...s2,
-            status: { type: "tool", toolName: tool.name }
-          }));
-        }
-        const results = await executeTools(toolBlocks, { cwd: cwd2, signal: void 0 });
+        const results = await executeTools(toolUseBlocks, { cwd: cwd2, signal: void 0 });
         for (const result of results) {
           const full = result.content;
           const truncated = full.length > 500;
@@ -57482,19 +57640,11 @@ Working directory: ${cwd2}`,
             ...s2,
             display: [
               ...s2.display,
-              {
-                role: "tool",
-                content: displayContent,
-                toolName: result.name,
-                isError: result.is_error
-              }
+              { role: "tool", content: displayContent, toolName: result.name, isError: result.is_error }
             ]
           }));
         }
-        const assistantMsg = {
-          role: "assistant",
-          content: response.content
-        };
+        const assistantMsg = { role: "assistant", content: contentBlocks };
         const toolResultMsg = {
           role: "user",
           content: results.map((r2) => ({
@@ -57505,13 +57655,10 @@ Working directory: ${cwd2}`,
           }))
         };
         messages = [...messages, assistantMsg, toolResultMsg];
-        setState((s2) => ({ ...s2, history: messages, status: { type: "thinking" } }));
+        setState((s2) => ({ ...s2, history: messages, status: { type: "streaming" } }));
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        setState((s2) => ({
-          ...s2,
-          status: { type: "error", message: msg }
-        }));
+        setState((s2) => ({ ...s2, streamingText: "", status: { type: "error", message: msg } }));
         loopCompleted = true;
         break;
       }
@@ -57520,13 +57667,11 @@ Working directory: ${cwd2}`,
       setState((s2) => ({
         ...s2,
         history: messages,
+        streamingText: "",
         status: { type: "idle" },
         display: [
           ...s2.display,
-          {
-            role: "assistant",
-            content: `\u26A0\uFE0F \u5DF2\u8FBE\u5230\u6700\u5927\u5DE5\u5177\u8C03\u7528\u8F6E\u6570 (${MAX_TOOL_ROUNDS2})\uFF0C\u81EA\u52A8\u505C\u6B62\u6267\u884C\u3002`
-          }
+          { role: "assistant", content: `\u26A0\uFE0F \u5DF2\u8FBE\u5230\u6700\u5927\u5DE5\u5177\u8C03\u7528\u8F6E\u6570 (${MAX_TOOL_ROUNDS2})\uFF0C\u81EA\u52A8\u505C\u6B62\u6267\u884C\u3002` }
         ]
       }));
     }
@@ -57567,7 +57712,7 @@ Working directory: ${cwd2}`,
   (0, import_react25.useEffect)(() => {
     if (initialPrompt) void runAgentLoop(initialPrompt, state);
   }, []);
-  const isbusy = state.status.type === "thinking" || state.status.type === "tool";
+  const isBusy = state.status.type === "streaming" || state.status.type === "thinking" || state.status.type === "tool";
   return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { flexDirection: "column", paddingX: 1, paddingY: 1, children: [
     /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { marginBottom: 1, borderStyle: "single", borderColor: "cyan", paddingX: 1, children: [
       /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { bold: true, color: "cyan", children: "\u26A1 TikatAK-Codex" }),
@@ -57588,7 +57733,14 @@ Working directory: ${cwd2}`,
       ] }),
       msg.role === "assistant" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
         /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "cyan", bold: true, children: "\u25C6 Codex" }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { paddingLeft: 2, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { wrap: "wrap", children: msg.content }) })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { paddingLeft: 2, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { wrap: "wrap", children: msg.content }) }),
+        msg.usage && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { paddingLeft: 2, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Text, { color: "gray", dimColor: true, children: [
+          "\u{1F4CA} ",
+          msg.usage.input,
+          "\u2191 ",
+          msg.usage.output,
+          "\u2193 tokens"
+        ] }) })
       ] }),
       msg.role === "tool" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { paddingLeft: 2, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Text, { color: msg.isError ? "red" : "yellow", dimColor: true, children: [
         msg.isError ? "\u2717" : "\u2713",
@@ -57598,6 +57750,11 @@ Working directory: ${cwd2}`,
         msg.content
       ] }) })
     ] }, i2)),
+    state.streamingText && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { flexDirection: "column", marginBottom: 1, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "cyan", bold: true, children: "\u25C6 Codex" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { paddingLeft: 2, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { wrap: "wrap", children: state.streamingText }) })
+    ] }),
+    state.status.type === "streaming" && !state.streamingText && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "yellow", children: "\u23F3 \u601D\u8003\u4E2D..." }) }),
     state.status.type === "thinking" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "yellow", children: "\u23F3 \u601D\u8003\u4E2D..." }) }),
     state.status.type === "tool" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Text, { color: "yellow", children: [
       "\u{1F527} \u8C03\u7528\u5DE5\u5177: ",
@@ -57608,7 +57765,7 @@ Working directory: ${cwd2}`,
       state.status.message
     ] }) }),
     state.info && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "gray", children: state.info }) }),
-    !isbusy ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { children: [
+    !isBusy ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "green", bold: true, children: "\u25B6 " }),
       /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { children: state.inputBuffer }),
       /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "green", bold: true, children: "\u2588" })
@@ -57626,7 +57783,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       exit();
       break;
     case "/clear":
-      setState((s2) => ({ ...s2, history: [], display: [], info: "\u2713 \u4E0A\u4E0B\u6587\u5DF2\u6E05\u9664" }));
+      setState((s2) => ({ ...s2, history: [], display: [], streamingText: "", info: "\u2713 \u4E0A\u4E0B\u6587\u5DF2\u6E05\u9664", sessionId: null }));
       break;
     case "/model":
       if (args[0]) setState((s2) => ({ ...s2, model: args[0], info: `\u6A21\u578B\u5DF2\u5207\u6362: ${args[0]}` }));
@@ -57639,7 +57796,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.0.7";
+        const VERSION3 = "1.1.0";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -57651,10 +57808,81 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
         }
       }
       break;
+    case "/sessions": {
+      const sessions = listSessions();
+      if (sessions.length === 0) {
+        setState((s2) => ({ ...s2, info: "\u6682\u65E0\u4FDD\u5B58\u7684\u4F1A\u8BDD" }));
+      } else {
+        const lines = sessions.slice(0, 10).map(
+          (s2, i2) => `${i2 + 1}. [${s2.id}] ${s2.title} (${s2.messageCount} \u6761\u6D88\u606F, ${s2.updatedAt.slice(0, 10)})`
+        );
+        setState((s2) => ({ ...s2, info: lines.join("\n") }));
+      }
+      break;
+    }
+    case "/resume": {
+      const sid = args[0];
+      if (!sid) {
+        setState((s2) => ({ ...s2, info: "\u7528\u6CD5: /resume <session-id>\uFF0C\u7528 /sessions \u67E5\u770B\u5217\u8868" }));
+        break;
+      }
+      const sess = loadSession(sid);
+      if (!sess) {
+        setState((s2) => ({ ...s2, info: `\u627E\u4E0D\u5230\u4F1A\u8BDD: ${sid}` }));
+        break;
+      }
+      const restoredDisp = sess.history.filter((m2) => m2.role === "user" || m2.role === "assistant").flatMap((m2) => {
+        if (m2.role === "user") {
+          const c2 = typeof m2.content === "string" ? m2.content : "[\u590D\u6742\u6D88\u606F]";
+          return [{ role: "user", content: c2 }];
+        }
+        const blocks = Array.isArray(m2.content) ? m2.content : [];
+        const text = blocks.filter((b2) => b2.type === "text").map((b2) => b2.text).join("");
+        return text ? [{ role: "assistant", content: text }] : [];
+      });
+      setState((s2) => ({
+        ...s2,
+        history: sess.history,
+        display: restoredDisp,
+        streamingText: "",
+        sessionId: sess.id,
+        model: sess.model ?? s2.model,
+        info: `\u2705 \u5DF2\u6062\u590D\u4F1A\u8BDD: ${sess.title}`
+      }));
+      break;
+    }
+    case "/save": {
+      setState((s2) => {
+        if (s2.history.length === 0) return { ...s2, info: "\u6CA1\u6709\u53EF\u4FDD\u5B58\u7684\u5BF9\u8BDD" };
+        const meta = saveSession(s2.sessionId, s2.history, s2.model);
+        return { ...s2, sessionId: meta.id, info: `\u2705 \u5DF2\u4FDD\u5B58: [${meta.id}] ${meta.title}` };
+      });
+      break;
+    }
+    case "/delete": {
+      const did = args[0];
+      if (!did) {
+        setState((s2) => ({ ...s2, info: "\u7528\u6CD5: /delete <session-id>" }));
+        break;
+      }
+      const ok = deleteSession(did);
+      setState((s2) => ({ ...s2, info: ok ? `\u2705 \u5DF2\u5220\u9664\u4F1A\u8BDD: ${did}` : `\u627E\u4E0D\u5230\u4F1A\u8BDD: ${did}` }));
+      break;
+    }
     case "/help":
       setState((s2) => ({
         ...s2,
-        info: "/provider [set|status|test|list]  /model <id>  /update  /clear  /exit"
+        info: [
+          "/provider [set|status|test|list]  \u2014 \u7BA1\u7406 AI \u63D0\u4F9B\u5546",
+          "/model <id>                       \u2014 \u5207\u6362\u6A21\u578B",
+          "/sessions                         \u2014 \u5217\u51FA\u5386\u53F2\u4F1A\u8BDD",
+          "/resume <id>                      \u2014 \u6062\u590D\u5386\u53F2\u4F1A\u8BDD",
+          "/save                             \u2014 \u624B\u52A8\u4FDD\u5B58\u5F53\u524D\u4F1A\u8BDD",
+          "/delete <id>                      \u2014 \u5220\u9664\u4F1A\u8BDD",
+          "/clear                            \u2014 \u6E05\u9664\u5F53\u524D\u5BF9\u8BDD",
+          "/update                           \u2014 \u68C0\u67E5\u7248\u672C\u66F4\u65B0",
+          "/exit                             \u2014 \u9000\u51FA"
+        ].join("\n")
       }));
       break;
     default:
@@ -57671,6 +57899,7 @@ var init_repl = __esm({
     init_toolExecutor();
     await init_provider();
     init_cwd();
+    init_sessions2();
     import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
     MAX_TOOL_ROUNDS2 = 50;
     SYSTEM_PROMPT = `You are TikatAK-Codex, an expert AI coding assistant.
@@ -57703,7 +57932,7 @@ init_activeProvider();
 await init_provider();
 init_claude();
 init_updater();
-var VERSION2 = "1.0.7";
+var VERSION2 = "1.1.0";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);
@@ -57723,7 +57952,7 @@ program2.command("update").description("Check for updates and optionally upgrade
   const { updateCommand: updateCommand2 } = await init_update().then(() => update_exports);
   await updateCommand2(VERSION2);
 });
-program2.argument("[prompt]", "Optional prompt to run non-interactively").option("-m, --model <model>", "Override model for this session").option("-p, --print", "Print output and exit (non-interactive)").action(async (prompt, opts) => {
+program2.argument("[prompt]", "Optional prompt to run non-interactively").option("-m, --model <model>", "Override model for this session").option("-p, --print", "Print output and exit (non-interactive)").option("-r, --resume <sessionId>", "Resume a previous session by ID").action(async (prompt, opts) => {
   if (!isProviderConfigured()) {
     console.log(source_default.yellow("\n\u26A1 \u6B22\u8FCE\u4F7F\u7528 TikatAK-Codex\uFF01"));
     console.log(source_default.gray("\u9996\u6B21\u4F7F\u7528\uFF0C\u8BF7\u5148\u914D\u7F6E AI \u63D0\u4F9B\u5546\uFF1A\n"));
@@ -57737,9 +57966,9 @@ program2.argument("[prompt]", "Optional prompt to run non-interactively").option
   if (prompt !== void 0 && opts?.print === true) {
     await runNonInteractive(prompt, opts.model);
   } else if (prompt !== void 0) {
-    await startRepl(prompt, opts?.model);
+    await startRepl(prompt, opts?.model, opts?.resume);
   } else {
-    await startRepl(void 0, opts?.model);
+    await startRepl(void 0, opts?.model, opts?.resume);
   }
 });
 async function runNonInteractive(prompt, model) {
@@ -57759,11 +57988,12 @@ async function runNonInteractive(prompt, model) {
     process.exit(1);
   }
 }
-async function startRepl(initialPrompt, model) {
+async function startRepl(initialPrompt, model, resumeSessionId) {
   const { launchRepl: launchRepl2 } = await init_repl().then(() => repl_exports);
   await launchRepl2({
     ...initialPrompt !== void 0 ? { initialPrompt } : {},
-    ...model !== void 0 ? { model } : {}
+    ...model !== void 0 ? { model } : {},
+    ...resumeSessionId !== void 0 ? { resumeSessionId } : {}
   });
 }
 program2.parseAsync(process.argv).catch((err) => {

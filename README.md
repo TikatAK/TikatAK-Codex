@@ -81,6 +81,9 @@ codex -p "解释这段代码"
 # 指定模型
 codex -m deepseek-coder-v2
 
+# 恢复上次会话
+codex -r <session-id>
+
 # 管理提供商
 codex provider set       # 可视化配置
 codex provider status    # 查看当前配置
@@ -97,8 +100,12 @@ codex update
 |------|------|
 | `/provider [set\|status\|test\|list]` | 管理提供商 |
 | `/model <model-id>` | 切换模型 |
+| `/sessions` | 列出历史会话 |
+| `/resume <id>` | 恢复历史会话 |
+| `/save` | 手动保存当前会话 |
+| `/delete <id>` | 删除会话 |
 | `/update` | 检查是否有新版本 |
-| `/clear` | 清除对话历史 |
+| `/clear` | 清除当前对话上下文 |
 | `/help` | 显示帮助 |
 | `/exit` | 退出 |
 

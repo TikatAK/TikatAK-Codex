@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { Box, Text, useInput, useApp, render } from 'ink'
-import { sendMessage } from '../services/api/claude.js'
+import { sendMessageStream } from '../services/api/claude.js'
 import { executeTools } from '../services/api/toolExecutor.js'
 import { providerCommand } from '../commands/provider/index.js'
 import { getCwd } from '../utils/cwd.js'
+import { saveSession, loadSession, listSessions, deleteSession } from '../utils/sessions/index.js'
 import type { AnthropicMessage, AnthropicBlock } from '../adapters/openai/index.js'
-import type { AnthropicToolUseBlock } from '../adapters/openai/responseAdapter.js'
+import type { AnthropicToolUseBlock, AnthropicTextBlock } from '../adapters/openai/responseAdapter.js'
 
 const MAX_TOOL_ROUNDS = 50
 const SYSTEM_PROMPT = `You are TikatAK-Codex, an expert AI coding assistant.
@@ -16,6 +17,7 @@ Current working directory will be provided in each request.`
 interface ReplOptions {
   initialPrompt?: string
   model?: string
+  resumeSessionId?: string
 }
 
 export async function launchRepl(opts: ReplOptions = {}): Promise<void> {
@@ -25,8 +27,9 @@ export async function launchRepl(opts: ReplOptions = {}): Promise<void> {
 
 type AgentStatus =
   | { type: 'idle' }
+  | { type: 'streaming' }
   | { type: 'thinking' }
-  | { type: 'tool'; toolName: string; description?: string }
+  | { type: 'tool'; toolName: string }
   | { type: 'error'; message: string }
 
 interface DisplayMessage {
@@ -34,28 +37,52 @@ interface DisplayMessage {
   content: string
   toolName?: string
   isError?: boolean
+  usage?: { input: number; output: number }
 }
 
 interface ReplState {
-  history: AnthropicMessage[]          // full message history for API
-  display: DisplayMessage[]            // display-only messages
+  history: AnthropicMessage[]
+  display: DisplayMessage[]
+  streamingText: string
   inputBuffer: string
   model: string | undefined
   status: AgentStatus
   info: string | null
+  sessionId: string | null     // current session ID (null = not yet saved)
 }
 
-function ReplApp({ initialPrompt, model: initialModel }: ReplOptions) {
+function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOptions) {
   const { exit } = useApp()
   const cwd = getCwd()
 
+  // Optionally restore a previous session
+  const restoredSession = resumeSessionId ? loadSession(resumeSessionId) : null
+  const restoredDisplay: DisplayMessage[] = restoredSession
+    ? restoredSession.history
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .flatMap((m): DisplayMessage[] => {
+          if (m.role === 'user') {
+            const c = typeof m.content === 'string' ? m.content : '[复杂消息]'
+            return [{ role: 'user', content: c }]
+          }
+          const blocks = Array.isArray(m.content) ? m.content : []
+          const text = blocks
+            .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+            .map(b => b.text)
+            .join('')
+          return text ? [{ role: 'assistant', content: text }] : []
+        })
+    : []
+
   const [state, setState] = useState<ReplState>({
-    history: [],
-    display: [],
+    history: restoredSession?.history ?? [],
+    display: restoredDisplay,
+    streamingText: '',
     inputBuffer: '',
-    model: initialModel,
+    model: restoredSession?.model ?? initialModel,
     status: { type: 'idle' },
-    info: null,
+    info: restoredSession ? `✅ 已恢复会话: ${restoredSession.title}` : null,
+    sessionId: resumeSessionId ?? null,
   })
 
   const runAgentLoop = useCallback(async (userInput: string, currentState: ReplState) => {
@@ -66,55 +93,102 @@ function ReplApp({ initialPrompt, model: initialModel }: ReplOptions) {
       ...s,
       history: messages,
       display: [...s.display, { role: 'user', content: userInput }],
+      streamingText: '',
       inputBuffer: '',
-      status: { type: 'thinking' },
+      status: { type: 'streaming' },
       info: null,
     }))
 
-    // Agentic loop: model may call tools multiple times
     let loopCompleted = false
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       try {
-        const response = await sendMessage({
+        // ── Consume stream and reconstruct response ──────────────────────
+        const streamGen = sendMessageStream({
           messages,
           system: `${SYSTEM_PROMPT}\nWorking directory: ${cwd}`,
           model: currentState.model,
         })
 
-        // Collect text and tool_use blocks
-        const textBlocks = response.content.filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-        const toolBlocks = response.content.filter((b): b is AnthropicToolUseBlock => b.type === 'tool_use')
+        let textContent = ''
+        let inputTokens = 0
+        let outputTokens = 0
+        let stopReason: string = 'end_turn'
+        const toolAccumulator = new Map<number, { id: string; name: string; argsJson: string }>()
 
-        const textContent = textBlocks.map(b => b.text).join('')
+        for await (const event of streamGen) {
+          if (event.type === 'message_start') {
+            inputTokens = event.usage.input_tokens
+          } else if (
+            event.type === 'content_block_delta' &&
+            event.delta.type === 'text_delta'
+          ) {
+            const text = event.delta.text
+            textContent += text
+            setState(s => ({ ...s, streamingText: s.streamingText + text }))
+          } else if (
+            event.type === 'content_block_start' &&
+            event.content_block.type === 'tool_use'
+          ) {
+            const tb = event.content_block
+            toolAccumulator.set(event.index, { id: tb.id, name: tb.name, argsJson: '' })
+            setState(s => ({ ...s, status: { type: 'tool', toolName: tb.name } }))
+          } else if (
+            event.type === 'content_block_delta' &&
+            event.delta.type === 'input_json_delta'
+          ) {
+            const acc = toolAccumulator.get(event.index)
+            if (acc) acc.argsJson += event.delta.partial_json
+          } else if (event.type === 'message_delta') {
+            stopReason = event.delta.stop_reason
+            outputTokens = event.usage.output_tokens
+          }
+        }
 
-        // Add assistant response to display
+        // ── Commit streamed text to display ──────────────────────────────
         if (textContent) {
           setState(s => ({
             ...s,
-            display: [...s.display, { role: 'assistant', content: textContent }],
+            streamingText: '',
+            display: [
+              ...s.display,
+              {
+                role: 'assistant' as const,
+                content: textContent,
+                usage: { input: inputTokens, output: outputTokens },
+              },
+            ],
           }))
+        } else {
+          setState(s => ({ ...s, streamingText: '' }))
         }
 
-        // No tools called — done
-        if (toolBlocks.length === 0 || response.stop_reason === 'end_turn') {
-          messages = [...messages, { role: 'assistant', content: response.content as AnthropicBlock[] }]
-          setState(s => ({ ...s, history: messages, status: { type: 'idle' } }))
+        // ── Build content blocks ─────────────────────────────────────────
+        const contentBlocks: AnthropicBlock[] = []
+        if (textContent) {
+          contentBlocks.push({ type: 'text', text: textContent } satisfies AnthropicTextBlock)
+        }
+        const toolUseBlocks: AnthropicToolUseBlock[] = []
+        for (const [, acc] of toolAccumulator) {
+          let parsedInput: unknown = {}
+          try { parsedInput = JSON.parse(acc.argsJson || '{}') } catch { parsedInput = {} }
+          const tb: AnthropicToolUseBlock = { type: 'tool_use', id: acc.id, name: acc.name, input: parsedInput }
+          contentBlocks.push(tb)
+          toolUseBlocks.push(tb)
+        }
+
+        // ── No tools — done ───────────────────────────────────────────────
+        if (toolUseBlocks.length === 0 || stopReason === 'end_turn') {
+          messages = [...messages, { role: 'assistant', content: contentBlocks }]
+          // Auto-save session after each complete turn
+          const meta = saveSession(currentState.sessionId, messages, currentState.model)
+          setState(s => ({ ...s, history: messages, status: { type: 'idle' }, sessionId: meta.id }))
           loopCompleted = true
           break
         }
 
-        // Show tool usage in UI
-        for (const tool of toolBlocks) {
-          setState(s => ({
-            ...s,
-            status: { type: 'tool', toolName: tool.name },
-          }))
-        }
+        // ── Execute tools in parallel ────────────────────────────────────
+        const results = await executeTools(toolUseBlocks, { cwd, signal: undefined })
 
-        // Execute all tool calls in parallel
-        const results = await executeTools(toolBlocks, { cwd, signal: undefined })
-
-        // Show tool results in display (with size info if truncated)
         for (const result of results) {
           const full = result.content
           const truncated = full.length > 500
@@ -125,21 +199,13 @@ function ReplApp({ initialPrompt, model: initialModel }: ReplOptions) {
             ...s,
             display: [
               ...s.display,
-              {
-                role: 'tool' as const,
-                content: displayContent,
-                toolName: result.name,
-                isError: result.is_error,
-              },
+              { role: 'tool' as const, content: displayContent, toolName: result.name, isError: result.is_error },
             ],
           }))
         }
 
-        // Build next iteration messages: add assistant tool_use + user tool_results
-        const assistantMsg: AnthropicMessage = {
-          role: 'assistant',
-          content: response.content as AnthropicBlock[],
-        }
+        // ── Build next round messages ─────────────────────────────────────
+        const assistantMsg: AnthropicMessage = { role: 'assistant', content: contentBlocks }
         const toolResultMsg: AnthropicMessage = {
           role: 'user',
           content: results.map(r => ({
@@ -150,31 +216,25 @@ function ReplApp({ initialPrompt, model: initialModel }: ReplOptions) {
           })),
         }
         messages = [...messages, assistantMsg, toolResultMsg]
-        setState(s => ({ ...s, history: messages, status: { type: 'thinking' } }))
+        setState(s => ({ ...s, history: messages, status: { type: 'streaming' } }))
 
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
-        setState(s => ({
-          ...s,
-          status: { type: 'error', message: msg },
-        }))
+        setState(s => ({ ...s, streamingText: '', status: { type: 'error', message: msg } }))
         loopCompleted = true
         break
       }
     }
 
-    // Reached MAX_TOOL_ROUNDS without natural completion
     if (!loopCompleted) {
       setState(s => ({
         ...s,
         history: messages,
+        streamingText: '',
         status: { type: 'idle' },
         display: [
           ...s.display,
-          {
-            role: 'assistant',
-            content: `⚠️ 已达到最大工具调用轮数 (${MAX_TOOL_ROUNDS})，自动停止执行。`,
-          },
+          { role: 'assistant', content: `⚠️ 已达到最大工具调用轮数 (${MAX_TOOL_ROUNDS})，自动停止执行。` },
         ],
       }))
     }
@@ -189,7 +249,6 @@ function ReplApp({ initialPrompt, model: initialModel }: ReplOptions) {
       return
     }
 
-    // Clear error state before running new loop
     if (state.status.type === 'error') {
       setState(s => ({ ...s, status: { type: 'idle' } }))
     }
@@ -217,7 +276,7 @@ function ReplApp({ initialPrompt, model: initialModel }: ReplOptions) {
     if (initialPrompt) void runAgentLoop(initialPrompt, state)
   }, [])
 
-  const isbusy = state.status.type === 'thinking' || state.status.type === 'tool'
+  const isBusy = state.status.type === 'streaming' || state.status.type === 'thinking' || state.status.type === 'tool'
 
   return (
     <Box flexDirection="column" paddingX={1} paddingY={1}>
@@ -241,6 +300,13 @@ function ReplApp({ initialPrompt, model: initialModel }: ReplOptions) {
             <>
               <Text color="cyan" bold>◆ Codex</Text>
               <Box paddingLeft={2}><Text wrap="wrap">{msg.content}</Text></Box>
+              {msg.usage && (
+                <Box paddingLeft={2}>
+                  <Text color="gray" dimColor>
+                    📊 {msg.usage.input}↑ {msg.usage.output}↓ tokens
+                  </Text>
+                </Box>
+              )}
             </>
           )}
           {msg.role === 'tool' && (
@@ -253,7 +319,20 @@ function ReplApp({ initialPrompt, model: initialModel }: ReplOptions) {
         </Box>
       ))}
 
+      {/* Live streaming text */}
+      {state.streamingText && (
+        <Box flexDirection="column" marginBottom={1}>
+          <Text color="cyan" bold>◆ Codex</Text>
+          <Box paddingLeft={2}><Text wrap="wrap">{state.streamingText}</Text></Box>
+        </Box>
+      )}
+
       {/* Status bar */}
+      {state.status.type === 'streaming' && !state.streamingText && (
+        <Box marginBottom={1}>
+          <Text color="yellow">⏳ 思考中...</Text>
+        </Box>
+      )}
       {state.status.type === 'thinking' && (
         <Box marginBottom={1}>
           <Text color="yellow">⏳ 思考中...</Text>
@@ -276,7 +355,7 @@ function ReplApp({ initialPrompt, model: initialModel }: ReplOptions) {
       )}
 
       {/* Input */}
-      {!isbusy ? (
+      {!isBusy ? (
         <Box>
           <Text color="green" bold>▶ </Text>
           <Text>{state.inputBuffer}</Text>
@@ -305,7 +384,7 @@ async function handleSlashCommand(
   switch (command) {
     case '/exit': case '/quit': exit(); break
     case '/clear':
-      setState(s => ({ ...s, history: [], display: [], info: '✓ 上下文已清除' }))
+      setState(s => ({ ...s, history: [], display: [], streamingText: '', info: '✓ 上下文已清除', sessionId: null }))
       break
     case '/model':
       if (args[0]) setState(s => ({ ...s, model: args[0], info: `模型已切换: ${args[0]}` }))
@@ -330,10 +409,83 @@ async function handleSlashCommand(
         }
       }
       break
+    case '/sessions': {
+      const sessions = listSessions()
+      if (sessions.length === 0) {
+        setState(s => ({ ...s, info: '暂无保存的会话' }))
+      } else {
+        const lines = sessions.slice(0, 10).map((s, i) =>
+          `${i + 1}. [${s.id}] ${s.title} (${s.messageCount} 条消息, ${s.updatedAt.slice(0, 10)})`
+        )
+        setState(s => ({ ...s, info: lines.join('\n') }))
+      }
+      break
+    }
+    case '/resume': {
+      const sid = args[0]
+      if (!sid) {
+        setState(s => ({ ...s, info: '用法: /resume <session-id>，用 /sessions 查看列表' }))
+        break
+      }
+      const sess = loadSession(sid)
+      if (!sess) {
+        setState(s => ({ ...s, info: `找不到会话: ${sid}` }))
+        break
+      }
+      const restoredDisp: DisplayMessage[] = sess.history
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .flatMap((m): DisplayMessage[] => {
+          if (m.role === 'user') {
+            const c = typeof m.content === 'string' ? m.content : '[复杂消息]'
+            return [{ role: 'user', content: c }]
+          }
+          const blocks = Array.isArray(m.content) ? m.content : []
+          const text = blocks
+            .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+            .map(b => b.text).join('')
+          return text ? [{ role: 'assistant', content: text }] : []
+        })
+      setState(s => ({
+        ...s,
+        history: sess.history,
+        display: restoredDisp,
+        streamingText: '',
+        sessionId: sess.id,
+        model: sess.model ?? s.model,
+        info: `✅ 已恢复会话: ${sess.title}`,
+      }))
+      break
+    }
+    case '/save': {
+      // Force-save current session
+      setState(s => {
+        if (s.history.length === 0) return { ...s, info: '没有可保存的对话' }
+        const meta = saveSession(s.sessionId, s.history, s.model)
+        return { ...s, sessionId: meta.id, info: `✅ 已保存: [${meta.id}] ${meta.title}` }
+      })
+      break
+    }
+    case '/delete': {
+      const did = args[0]
+      if (!did) { setState(s => ({ ...s, info: '用法: /delete <session-id>' })); break }
+      const ok = deleteSession(did)
+      setState(s => ({ ...s, info: ok ? `✅ 已删除会话: ${did}` : `找不到会话: ${did}` }))
+      break
+    }
     case '/help':
       setState(s => ({
         ...s,
-        info: '/provider [set|status|test|list]  /model <id>  /update  /clear  /exit',
+        info: [
+          '/provider [set|status|test|list]  — 管理 AI 提供商',
+          '/model <id>                       — 切换模型',
+          '/sessions                         — 列出历史会话',
+          '/resume <id>                      — 恢复历史会话',
+          '/save                             — 手动保存当前会话',
+          '/delete <id>                      — 删除会话',
+          '/clear                            — 清除当前对话',
+          '/update                           — 检查版本更新',
+          '/exit                             — 退出',
+        ].join('\n'),
       }))
       break
     default:

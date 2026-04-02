@@ -46,7 +46,8 @@ program
   .argument('[prompt]', 'Optional prompt to run non-interactively')
   .option('-m, --model <model>', 'Override model for this session')
   .option('-p, --print', 'Print output and exit (non-interactive)')
-  .action(async (prompt?: string, opts?: { model?: string; print?: boolean }) => {
+  .option('-r, --resume <sessionId>', 'Resume a previous session by ID')
+  .action(async (prompt?: string, opts?: { model?: string; print?: boolean; resume?: string }) => {
     if (!isProviderConfigured()) {
       console.log(chalk.yellow('\n⚡ 欢迎使用 TikatAK-Codex！'))
       console.log(chalk.gray('首次使用，请先配置 AI 提供商：\n'))
@@ -63,9 +64,9 @@ program
     if (prompt !== undefined && opts?.print === true) {
       await runNonInteractive(prompt, opts.model)
     } else if (prompt !== undefined) {
-      await startRepl(prompt, opts?.model)
+      await startRepl(prompt, opts?.model, opts?.resume)
     } else {
-      await startRepl(undefined, opts?.model)
+      await startRepl(undefined, opts?.model, opts?.resume)
     }
   })
 
@@ -88,11 +89,12 @@ async function runNonInteractive(prompt: string, model?: string): Promise<void> 
   }
 }
 
-async function startRepl(initialPrompt?: string, model?: string): Promise<void> {
+async function startRepl(initialPrompt?: string, model?: string, resumeSessionId?: string): Promise<void> {
   const { launchRepl } = await import('./repl/index.js')
   await launchRepl({
     ...(initialPrompt !== undefined ? { initialPrompt } : {}),
     ...(model !== undefined ? { model } : {}),
+    ...(resumeSessionId !== undefined ? { resumeSessionId } : {}),
   })
 }
 
