@@ -4,11 +4,16 @@ import { execFileSync } from 'child_process'
 import { platform, release } from 'os'
 
 /**
- * Try to read a CLAUDE.md (or AGENTS.md) file from the given directory.
+ * Try to read a TIKAT.md (or CODEX.md) project instructions file from the given directory.
  * Returns the file content, or null if not found.
+ *
+ * Supported file names (checked in order):
+ *   TIKAT.md  →  primary (Tikat-Codex branded)
+ *   CODEX.md  →  alternative short name
+ *   .tikat.md →  hidden variant
  */
-export function readClaudeMd(cwd: string): string | null {
-  for (const name of ['CLAUDE.md', 'AGENTS.md', '.claude.md']) {
+export function readProjectInstructions(cwd: string): string | null {
+  for (const name of ['TIKAT.md', 'CODEX.md', '.tikat.md']) {
     const filePath = join(cwd, name)
     if (existsSync(filePath)) {
       try {

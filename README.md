@@ -117,12 +117,12 @@ codex update
 
 ---
 
-## 项目级行为定制（CLAUDE.md）
+## 项目级行为定制（TIKAT.md）
 
-在项目根目录创建 `CLAUDE.md` 文件，Tikat-Codex 启动时会自动读取并注入系统提示，让 AI 遵守项目专属规范：
+在项目根目录创建 `TIKAT.md` 文件，Tikat-Codex 启动时会自动读取并注入系统提示，让 AI 遵守项目专属规范：
 
 ```markdown
-# CLAUDE.md 示例
+# TIKAT.md 示例
 
 ## 项目规范
 - 所有代码使用 TypeScript，禁止 any
@@ -138,7 +138,7 @@ codex update
 - 优先使用函数式写法
 ```
 
-支持的文件名：`CLAUDE.md`、`AGENTS.md`、`.claude.md`
+支持的文件名：`TIKAT.md`（首选）、`CODEX.md`、`.tikat.md`
 
 ---
 

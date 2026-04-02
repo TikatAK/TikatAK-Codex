@@ -5,7 +5,7 @@ import { providerCommand } from './commands/provider/index.js'
 import { sendMessageStream } from './services/api/claude.js'
 import { checkForUpdates } from './utils/updater.js'
 import { buildSystemPrompt } from './constants/prompts.js'
-import { readClaudeMd, getGitContext, getEnvContext } from './utils/context/session.js'
+import { readProjectInstructions, getGitContext, getEnvContext } from './utils/context/session.js'
 
 const VERSION = process.env['TIKAT_VERSION'] ?? '0.1.0'
 
@@ -87,7 +87,7 @@ async function runNonInteractive(prompt: string, model?: string): Promise<void> 
   const cwd = getCwd()
 
   const systemPrompt = buildSystemPrompt({
-    claudeMd: readClaudeMd(cwd) ?? undefined,
+    claudeMd: readProjectInstructions(cwd) ?? undefined,
     gitContext: getGitContext(cwd) ?? undefined,
     envInfo: getEnvContext(),
   })

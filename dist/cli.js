@@ -57041,7 +57041,7 @@ var init_cwd = __esm({
 function buildSystemPrompt(extra) {
   const sections = [BASE_SYSTEM_PROMPT];
   if (extra?.claudeMd) {
-    sections.push(`# Project Instructions (from CLAUDE.md)
+    sections.push(`# Project Instructions (from TIKAT.md)
 
 ${extra.claudeMd}`);
   }
@@ -57510,8 +57510,8 @@ import { existsSync as existsSync7, readFileSync as readFileSync5 } from "fs";
 import { join as join9 } from "path";
 import { execFileSync } from "child_process";
 import { platform as platform2, release } from "os";
-function readClaudeMd(cwd2) {
-  for (const name of ["CLAUDE.md", "AGENTS.md", ".claude.md"]) {
+function readProjectInstructions(cwd2) {
+  for (const name of ["TIKAT.md", "CODEX.md", ".tikat.md"]) {
     const filePath = join9(cwd2, name);
     if (existsSync7(filePath)) {
       try {
@@ -58174,7 +58174,7 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
   const { exit } = use_app_default();
   const cwd2 = getCwd();
   const systemPrompt = buildSystemPrompt({
-    claudeMd: readClaudeMd(cwd2) ?? void 0,
+    claudeMd: readProjectInstructions(cwd2) ?? void 0,
     gitContext: getGitContext(cwd2) ?? void 0,
     envInfo: getEnvContext()
   });
@@ -58452,7 +58452,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.4.0";
+        const VERSION3 = "1.4.1";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -58598,7 +58598,7 @@ init_claude();
 init_updater();
 init_prompts();
 init_session();
-var VERSION2 = "1.4.0";
+var VERSION2 = "1.4.1";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);
@@ -58647,7 +58647,7 @@ async function runNonInteractive(prompt, model) {
   const { compressContext: compressContext2 } = await Promise.resolve().then(() => (init_context(), context_exports));
   const cwd2 = getCwd2();
   const systemPrompt = buildSystemPrompt({
-    claudeMd: readClaudeMd(cwd2) ?? void 0,
+    claudeMd: readProjectInstructions(cwd2) ?? void 0,
     gitContext: getGitContext(cwd2) ?? void 0,
     envInfo: getEnvContext()
   });

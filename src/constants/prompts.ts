@@ -2,16 +2,17 @@ import { getCwd } from '../utils/cwd.js'
 
 /**
  * Build the complete system prompt with injected environment context.
- * Call this at the start of each session — it detects git repo, reads CLAUDE.md, etc.
+ * Call this at the start of each session — it detects git repo, reads TIKAT.md, etc.
  */
 export function buildSystemPrompt(extra?: {
   gitContext?: string
+  /** Contents of TIKAT.md / CODEX.md project instructions file */
   claudeMd?: string
   envInfo?: string
 }): string {
   const sections: string[] = [BASE_SYSTEM_PROMPT]
   if (extra?.claudeMd) {
-    sections.push(`# Project Instructions (from CLAUDE.md)\n\n${extra.claudeMd}`)
+    sections.push(`# Project Instructions (from TIKAT.md)\n\n${extra.claudeMd}`)
   }
   if (extra?.gitContext) {
     sections.push(extra.gitContext)

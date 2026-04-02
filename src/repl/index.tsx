@@ -8,7 +8,7 @@ import { saveSession, loadSession, listSessions, deleteSession } from '../utils/
 import { compressContext, estimateTokens } from '../utils/context/index.js'
 import { highlight } from '../utils/highlight/index.js'
 import { buildSystemPrompt } from '../constants/prompts.js'
-import { readClaudeMd, getGitContext, getEnvContext } from '../utils/context/session.js'
+import { readProjectInstructions, getGitContext, getEnvContext } from '../utils/context/session.js'
 import type { AnthropicMessage, AnthropicBlock } from '../adapters/openai/index.js'
 import type { AnthropicToolUseBlock, AnthropicTextBlock } from '../adapters/openai/responseAdapter.js'
 
@@ -57,7 +57,7 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
 
   // Build system prompt once with git context, CLAUDE.md, and env info
   const systemPrompt = buildSystemPrompt({
-    claudeMd: readClaudeMd(cwd) ?? undefined,
+    claudeMd: readProjectInstructions(cwd) ?? undefined,
     gitContext: getGitContext(cwd) ?? undefined,
     envInfo: getEnvContext(),
   })
