@@ -3910,7 +3910,7 @@ var CONFIG_DIR, SETTINGS_FILE, APIKEY_FILE;
 var init_settings = __esm({
   "src/utils/settings/index.ts"() {
     "use strict";
-    CONFIG_DIR = join(homedir(), ".tikatak-codex");
+    CONFIG_DIR = join(homedir(), ".tikat-codex");
     SETTINGS_FILE = join(CONFIG_DIR, "settings.json");
     APIKEY_FILE = join(CONFIG_DIR, "apikey");
   }
@@ -51730,7 +51730,7 @@ function ProviderConfigUI({ onComplete, onCancel }) {
   }
   const modelList = selectedPreset?.models ?? [];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Box_default, { flexDirection: "column", borderStyle: "round", borderColor: "cyan", paddingX: 2, paddingY: 1, width: 62, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Box_default, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Text, { bold: true, color: "cyan", children: "\u26A1 TikatAK-Codex \u2014 \u63D0\u4F9B\u5546\u914D\u7F6E" }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Box_default, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Text, { bold: true, color: "cyan", children: "\u26A1 Tikat-Codex \u2014 \u63D0\u4F9B\u5546\u914D\u7F6E" }) }),
     step === "select-preset" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Box_default, { flexDirection: "column", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Text, { color: "gray", children: "\u9009\u62E9 AI \u63D0\u4F9B\u5546\uFF1A" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Box_default, { flexDirection: "column", marginTop: 1, children: ALL_OPTIONS.map((preset, i2) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Text, { color: i2 === selectedIndex ? "green" : "white", children: [
@@ -56833,7 +56833,7 @@ var init_WebFetchTool = __esm({
           const response = await fetch(input.url, {
             signal: controller.signal,
             headers: {
-              "User-Agent": "TikatAK-Codex/0.1.0",
+              "User-Agent": "Tikat-Codex/0.1.0",
               "Accept": "text/html,application/xhtml+xml,application/json,text/plain"
             }
           }).finally(() => clearTimeout(timer));
@@ -56874,7 +56874,7 @@ function readTodos() {
   }
 }
 function writeTodos(todos) {
-  mkdirSync3(join8(homedir2(), ".tikatak-codex"), { recursive: true });
+  mkdirSync3(join8(homedir2(), ".Tikat-Codex"), { recursive: true });
   writeFileSync4(TODO_FILE, JSON.stringify(todos, null, 2), "utf8");
 }
 var TODO_FILE, inputSchema9, TodoWriteTool, TodoReadTool;
@@ -56882,7 +56882,7 @@ var init_TodoWriteTool = __esm({
   "src/tools/TodoWriteTool/index.ts"() {
     "use strict";
     init_zod();
-    TODO_FILE = join8(homedir2(), ".tikatak-codex", "todos.json");
+    TODO_FILE = join8(homedir2(), ".Tikat-Codex", "todos.json");
     inputSchema9 = external_exports.object({
       todos: external_exports.array(external_exports.object({
         id: external_exports.string(),
@@ -57311,8 +57311,8 @@ var init_updater = __esm({
   "src/utils/updater.ts"() {
     "use strict";
     execFileAsync3 = promisify3(execFile3);
-    GITHUB_RAW_URL = "https://raw.githubusercontent.com/TikatAK/TikatAK-Codex/master/package.json";
-    GITHUB_REPO = "TikatAK/TikatAK-Codex";
+    GITHUB_RAW_URL = "https://raw.githubusercontent.com/TikatAK/Tikat-Codex/master/package.json";
+    GITHUB_REPO = "TikatAK/Tikat-Codex";
     CHECK_TIMEOUT_MS = 5e3;
   }
 });
@@ -57361,7 +57361,7 @@ function UpdateUI({ currentVersion }) {
     }
   });
   return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(Box_default, { flexDirection: "column", borderStyle: "round", borderColor: "cyan", paddingX: 2, paddingY: 1, width: 60, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Box_default, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Text, { bold: true, color: "cyan", children: "\u26A1 TikatAK-Codex \u66F4\u65B0\u68C0\u67E5" }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Box_default, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Text, { bold: true, color: "cyan", children: "\u26A1 Tikat-Codex \u66F4\u65B0\u68C0\u67E5" }) }),
     step === "checking" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Text, { color: "yellow", children: "\u23F3 \u6B63\u5728\u68C0\u67E5\u6700\u65B0\u7248\u672C..." }),
     step === "up-to-date" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(Box_default, { flexDirection: "column", children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(Text, { color: "green", children: [
@@ -57405,7 +57405,7 @@ function UpdateUI({ currentVersion }) {
         "\u274C \u66F4\u65B0\u5931\u8D25\uFF1A",
         message
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Text, { color: "gray", dimColor: true, children: "\u8BF7\u624B\u52A8\u8FD0\u884C: npm install -g github:TikatAK/TikatAK-Codex" })
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Text, { color: "gray", dimColor: true, children: "\u8BF7\u624B\u52A8\u8FD0\u884C: npm install -g github:TikatAK/Tikat-Codex" })
     ] })
   ] });
 }
@@ -57436,7 +57436,7 @@ function printResult(r2) {
   console.log(`  ${icon}  ${r2.label.padEnd(24)} ${r2.detail}`);
 }
 async function diagnoseCommand() {
-  console.log(source_default.cyan("\n\u{1F50D} TikatAK-Codex \u8BCA\u65AD\u62A5\u544A\n"));
+  console.log(source_default.cyan("\n\u{1F50D} Tikat-Codex \u8BCA\u65AD\u62A5\u544A\n"));
   const results = [];
   const nodeVer = process.version;
   const nodeMajor = parseInt(nodeVer.slice(1));
@@ -57522,7 +57522,7 @@ async function diagnoseCommand() {
     const { existsSync: existsSync8, mkdirSync: mkdirSync5 } = await import("fs");
     const { homedir: homedir4 } = await import("os");
     const { join: join10 } = await import("path");
-    const configDir = join10(homedir4(), ".tikatak-codex");
+    const configDir = join10(homedir4(), ".Tikat-Codex");
     if (!existsSync8(configDir)) mkdirSync5(configDir, { recursive: true, mode: 448 });
     results.push({ label: "\u914D\u7F6E\u76EE\u5F55\u53EF\u5199", ok: true, detail: configDir });
   } catch (err) {
@@ -57656,7 +57656,7 @@ var CONFIG_DIR2, SESSIONS_DIR, MAX_SESSIONS;
 var init_sessions2 = __esm({
   "src/utils/sessions/index.ts"() {
     "use strict";
-    CONFIG_DIR2 = join9(homedir3(), ".tikatak-codex");
+    CONFIG_DIR2 = join9(homedir3(), ".tikat-codex");
     SESSIONS_DIR = join9(CONFIG_DIR2, "sessions");
     MAX_SESSIONS = 20;
   }
@@ -58119,7 +58119,7 @@ Working directory: ${cwd2}`,
   const isBusy = state.status.type === "streaming" || state.status.type === "thinking" || state.status.type === "tool";
   return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { flexDirection: "column", paddingX: 1, paddingY: 1, children: [
     /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { marginBottom: 1, borderStyle: "single", borderColor: "cyan", paddingX: 1, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { bold: true, color: "cyan", children: "\u26A1 TikatAK-Codex" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { bold: true, color: "cyan", children: "\u26A1 Tikat-Codex" }),
       state.model && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Text, { color: "gray", children: [
         "  [",
         state.model,
@@ -58200,7 +58200,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.2.2";
+        const VERSION3 = "1.3.0";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -58316,7 +58316,7 @@ var init_repl = __esm({
     init_highlight();
     import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
     MAX_TOOL_ROUNDS2 = 50;
-    SYSTEM_PROMPT = `You are TikatAK-Codex, an expert AI coding assistant.
+    SYSTEM_PROMPT = `You are Tikat-Codex, an expert AI coding assistant.
 You have access to tools to read files, write files, run bash commands, search code, and browse the web.
 Always use tools to actually perform tasks rather than just describing what to do.
 Current working directory will be provided in each request.`;
@@ -58346,7 +58346,7 @@ init_activeProvider();
 await init_provider();
 init_claude();
 init_updater();
-var VERSION2 = "1.2.2";
+var VERSION2 = "1.3.0";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);
@@ -58358,7 +58358,7 @@ async function silentUpdateCheck() {
   } catch {
   }
 }
-var program2 = new Command().name("codex").description("TikatAK-Codex \u2014 AI coding assistant with any OpenAI-compatible provider").version(VERSION2);
+var program2 = new Command().name("codex").description("Tikat-Codex \u2014 AI coding assistant with any OpenAI-compatible provider").version(VERSION2);
 program2.command("provider [subcommand]").description("Manage AI provider configuration (set, status, test, list)").action(async (subcommand) => {
   await providerCommand(subcommand);
 });
@@ -58372,7 +58372,7 @@ program2.command("diagnose").description("Run diagnostics: check Node.js version
 });
 program2.argument("[prompt]", "Optional prompt to run non-interactively").option("-m, --model <model>", "Override model for this session").option("-p, --print", "Print output and exit (non-interactive)").option("-r, --resume <sessionId>", "Resume a previous session by ID").action(async (prompt, opts) => {
   if (!isProviderConfigured()) {
-    console.log(source_default.yellow("\n\u26A1 \u6B22\u8FCE\u4F7F\u7528 TikatAK-Codex\uFF01"));
+    console.log(source_default.yellow("\n\u26A1 \u6B22\u8FCE\u4F7F\u7528 Tikat-Codex\uFF01"));
     console.log(source_default.gray("\u9996\u6B21\u4F7F\u7528\uFF0C\u8BF7\u5148\u914D\u7F6E AI \u63D0\u4F9B\u5546\uFF1A\n"));
     await providerCommand("set");
     if (!isProviderConfigured()) {

@@ -1,14 +1,14 @@
-# TikatAK-Codex
+# Tikat-Codex
 
 **一个支持任意 OpenAI 兼容提供商的 AI 编程助手 CLI**
 
 > 基于 Claude Code 2.1.88 的架构理念重写，支持 DeepSeek、OpenAI、Kimi、通义千问、GLM、Mistral、Gemini、Ollama 等任意兼容 OpenAI API 的提供商。
 
-[![GitHub release](https://img.shields.io/github/v/release/TikatAK/TikatAK-Codex)](https://github.com/TikatAK/TikatAK-Codex/releases)
+[![GitHub release](https://img.shields.io/github/v/release/TikatAK/Tikat-Codex)](https://github.com/TikatAK/Tikat-Codex/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Beta](https://img.shields.io/badge/status-beta-orange)
 
-> ⚠️ **Beta 版本**：核心功能已可用，但仍处于早期阶段，可能存在未知问题。欢迎提 [Issue](https://github.com/TikatAK/TikatAK-Codex/issues) 反馈。
+> ⚠️ **Beta 版本**：核心功能已可用，但仍处于早期阶段，可能存在未知问题。欢迎提 [Issue](https://github.com/TikatAK/Tikat-Codex/issues) 反馈。
 
 ---
 
@@ -18,11 +18,11 @@
 
 ```bash
 # 方式一：从 GitHub 全局安装（推荐）
-npm install -g github:TikatAK/TikatAK-Codex
+npm install -g github:TikatAK/Tikat-Codex
 
 # 方式二：克隆源码本地安装
-git clone https://github.com/TikatAK/TikatAK-Codex.git
-cd TikatAK-Codex
+git clone https://github.com/TikatAK/Tikat-Codex.git
+cd Tikat-Codex
 npm install && npm run build
 npm install -g .
 ```
@@ -179,8 +179,8 @@ src/
 
 ## 配置文件位置
 
-- 设置: `~/.tikatak-codex/settings.json`
-- API Key: `~/.tikatak-codex/apikey`（权限 0600，仅当前用户可读）
+- 设置: `~/.Tikat-Codex/settings.json`
+- API Key: `~/.Tikat-Codex/apikey`（权限 0600，仅当前用户可读）
 
 ---
 

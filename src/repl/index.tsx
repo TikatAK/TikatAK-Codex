@@ -11,7 +11,7 @@ import type { AnthropicMessage, AnthropicBlock } from '../adapters/openai/index.
 import type { AnthropicToolUseBlock, AnthropicTextBlock } from '../adapters/openai/responseAdapter.js'
 
 const MAX_TOOL_ROUNDS = 50
-const SYSTEM_PROMPT = `You are TikatAK-Codex, an expert AI coding assistant.
+const SYSTEM_PROMPT = `You are Tikat-Codex, an expert AI coding assistant.
 You have access to tools to read files, write files, run bash commands, search code, and browse the web.
 Always use tools to actually perform tasks rather than just describing what to do.
 Current working directory will be provided in each request.`
@@ -291,7 +291,7 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
     <Box flexDirection="column" paddingX={1} paddingY={1}>
       {/* Header */}
       <Box marginBottom={1} borderStyle="single" borderColor="cyan" paddingX={1}>
-        <Text bold color="cyan">⚡ TikatAK-Codex</Text>
+        <Text bold color="cyan">⚡ Tikat-Codex</Text>
         {state.model && <Text color="gray">  [{state.model}]</Text>}
         <Text color="gray">  {cwd}</Text>
       </Box>
@@ -406,7 +406,7 @@ async function handleSlashCommand(
       setState(s => ({ ...s, info: '⏳ 正在检查更新...' }))
       {
         const { checkForUpdates } = await import('../utils/updater.js')
-        const VERSION = process.env['TIKATAK_VERSION'] ?? '0.1.0'
+        const VERSION = process.env['TIKAT_VERSION'] ?? '0.1.0'
         const info = await checkForUpdates(VERSION)
         if (!info.hasUpdate) {
           setState(s => ({ ...s, info: `✅ 已是最新版本 v${info.latestVersion}` }))

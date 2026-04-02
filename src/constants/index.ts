@@ -5,8 +5,8 @@ export const ENV_MODEL = 'CODEX_MODEL'
 export const ENV_PROVIDER = 'CODEX_PROVIDER'
 
 /** App info */
-export const APP_NAME = 'TikatAK-Codex'
-export const CONFIG_DIR_NAME = '.tikatak-codex'
+export const APP_NAME = 'Tikat-Codex'
+export const CONFIG_DIR_NAME = '.Tikat-Codex'
 
 /** Default generation settings */
 export const DEFAULT_MAX_TOKENS = 8192

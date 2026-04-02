@@ -4,6 +4,20 @@
 
 ---
 
+## [1.3.0] - 2026-04-02
+
+### 重大变更
+- **项目更名**：`TikatAK-Codex` → `Tikat-Codex`
+  - npm 包名：`tikatak-codex` → `tikat-codex`
+  - 配置目录：`~/.tikatak-codex` → `~/.tikat-codex`
+  - 二进制别名：`tikatak-codex` → `tikat-codex`（主命令 `codex` 不变）
+  - 环境变量：`TIKATAK_VERSION` → `TIKAT_VERSION`
+  - GitHub 仓库链接同步更新为 `TikatAK/Tikat-Codex`
+
+> **升级注意**：如已配置 API Key，请将 `~/.tikatak-codex/` 目录内容复制到 `~/.tikat-codex/`，或重新运行 `codex provider set`。
+
+---
+
 ## [1.2.2] - 2026-04-02
 
 ### 修复
@@ -45,7 +59,7 @@
 ### 新增
 - **流式输出**：AI 回复现在实时逐字显示，不再等待完整响应才渲染，体验大幅提升
 - **Token 用量显示**：每条 AI 消息下方显示输入/输出 token 数（📊 XXX↑ YYY↓ tokens）
-- **会话持久化**：对话结束后自动保存至 `~/.tikatak-codex/sessions/`，最多保留 20 条历史
+- **会话持久化**：对话结束后自动保存至 `~/.Tikat-Codex/sessions/`，最多保留 20 条历史
 - **会话管理命令**：`/sessions`（列表）、`/resume <id>`（恢复）、`/save`（手动保存）、`/delete <id>`（删除）
 - **`-r / --resume` 启动参数**：`codex -r <session-id>` 直接从命令行恢复历史会话
 - **`/help` 优化**：命令说明更完整，每条命令附带用途描述
@@ -83,7 +97,7 @@
 ## [1.0.5] - 2026-04-01
 
 ### 修复
-- **版本号始终显示 0.1.0**：`main.tsx` 和 `repl/index.tsx` 读取的环境变量名 `npm_package_version` 与 `build.mjs` 注入的 `TIKATAK_VERSION` 不一致，导致 fallback 到硬编码的 `0.1.0`。现统一使用 `TIKATAK_VERSION`
+- **版本号始终显示 0.1.0**：`main.tsx` 和 `repl/index.tsx` 读取的环境变量名 `npm_package_version` 与 `build.mjs` 注入的 `TIKAT_VERSION` 不一致，导致 fallback 到硬编码的 `0.1.0`。现统一使用 `TIKAT_VERSION`
 
 ---
 

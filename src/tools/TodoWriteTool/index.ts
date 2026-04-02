@@ -4,7 +4,7 @@ import { join } from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
 
-const TODO_FILE = join(homedir(), '.tikatak-codex', 'todos.json')
+const TODO_FILE = join(homedir(), '.Tikat-Codex', 'todos.json')
 
 interface Todo {
   id: string
@@ -21,7 +21,7 @@ function readTodos(): Todo[] {
 }
 
 function writeTodos(todos: Todo[]): void {
-  mkdirSync(join(homedir(), '.tikatak-codex'), { recursive: true })
+  mkdirSync(join(homedir(), '.Tikat-Codex'), { recursive: true })
   writeFileSync(TODO_FILE, JSON.stringify(todos, null, 2), 'utf8')
 }
 

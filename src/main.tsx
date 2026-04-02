@@ -5,7 +5,7 @@ import { providerCommand } from './commands/provider/index.js'
 import { sendMessageStream } from './services/api/claude.js'
 import { checkForUpdates } from './utils/updater.js'
 
-const VERSION = process.env['TIKATAK_VERSION'] ?? '0.1.0'
+const VERSION = process.env['TIKAT_VERSION'] ?? '0.1.0'
 
 /** Silent background update check — shows a one-line hint if update is available */
 async function silentUpdateCheck(): Promise<void> {
@@ -24,7 +24,7 @@ async function silentUpdateCheck(): Promise<void> {
 
 const program = new Command()
   .name('codex')
-  .description('TikatAK-Codex — AI coding assistant with any OpenAI-compatible provider')
+  .description('Tikat-Codex — AI coding assistant with any OpenAI-compatible provider')
   .version(VERSION)
 
 program
@@ -57,7 +57,7 @@ program
   .option('-r, --resume <sessionId>', 'Resume a previous session by ID')
   .action(async (prompt?: string, opts?: { model?: string; print?: boolean; resume?: string }) => {
     if (!isProviderConfigured()) {
-      console.log(chalk.yellow('\n⚡ 欢迎使用 TikatAK-Codex！'))
+      console.log(chalk.yellow('\n⚡ 欢迎使用 Tikat-Codex！'))
       console.log(chalk.gray('首次使用，请先配置 AI 提供商：\n'))
       await providerCommand('set')
       if (!isProviderConfigured()) {

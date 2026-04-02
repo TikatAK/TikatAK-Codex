@@ -3,7 +3,7 @@ import { homedir } from 'os'
 import { join } from 'path'
 import type { AnthropicMessage } from '../../adapters/openai/index.js'
 
-const CONFIG_DIR = join(homedir(), '.tikatak-codex')
+const CONFIG_DIR = join(homedir(), '.tikat-codex')
 const SESSIONS_DIR = join(CONFIG_DIR, 'sessions')
 const MAX_SESSIONS = 20
 

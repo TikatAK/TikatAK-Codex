@@ -3,7 +3,7 @@ import { homedir } from 'os'
 import { join } from 'path'
 import type { StoredProviderSettings } from '../../providers/types.js'
 
-const CONFIG_DIR = join(homedir(), '.tikatak-codex')
+const CONFIG_DIR = join(homedir(), '.tikat-codex')
 const SETTINGS_FILE = join(CONFIG_DIR, 'settings.json')
 const APIKEY_FILE = join(CONFIG_DIR, 'apikey')
 

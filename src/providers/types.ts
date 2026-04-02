@@ -1,5 +1,5 @@
 /**
- * Provider configuration types for TikatAK-Codex.
+ * Provider configuration types for Tikat-Codex.
  * Supports any OpenAI-compatible API endpoint.
  */
 

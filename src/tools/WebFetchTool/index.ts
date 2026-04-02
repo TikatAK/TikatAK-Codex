@@ -39,7 +39,7 @@ export const WebFetchTool: ToolDef<Input, string> = {
       const response = await fetch(input.url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'TikatAK-Codex/0.1.0',
+          'User-Agent': 'Tikat-Codex/0.1.0',
           'Accept': 'text/html,application/xhtml+xml,application/json,text/plain',
         },
       }).finally(() => clearTimeout(timer))

@@ -14,7 +14,7 @@ function printResult(r: DiagResult): void {
 }
 
 export async function diagnoseCommand(): Promise<void> {
-  console.log(chalk.cyan('\n🔍 TikatAK-Codex 诊断报告\n'))
+  console.log(chalk.cyan('\n🔍 Tikat-Codex 诊断报告\n'))
   const results: DiagResult[] = []
 
   // 1. Node.js version
@@ -111,7 +111,7 @@ export async function diagnoseCommand(): Promise<void> {
     const { existsSync, mkdirSync } = await import('fs')
     const { homedir } = await import('os')
     const { join } = await import('path')
-    const configDir = join(homedir(), '.tikatak-codex')
+    const configDir = join(homedir(), '.Tikat-Codex')
     if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true, mode: 0o700 })
     results.push({ label: '配置目录可写', ok: true, detail: configDir })
   } catch (err) {

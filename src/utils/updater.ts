@@ -4,8 +4,8 @@ import { promisify } from 'util'
 const execFileAsync = promisify(execFile)
 
 const GITHUB_RAW_URL =
-  'https://raw.githubusercontent.com/TikatAK/TikatAK-Codex/master/package.json'
-const GITHUB_REPO = 'TikatAK/TikatAK-Codex'
+  'https://raw.githubusercontent.com/TikatAK/Tikat-Codex/master/package.json'
+const GITHUB_REPO = 'TikatAK/Tikat-Codex'
 const CHECK_TIMEOUT_MS = 5000
 
 export interface UpdateInfo {

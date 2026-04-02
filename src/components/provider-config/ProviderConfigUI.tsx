@@ -186,7 +186,7 @@ export function ProviderConfigUI({ onComplete, onCancel }: ProviderConfigUIProps
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1} width={62}>
       <Box marginBottom={1}>
-        <Text bold color="cyan">⚡ TikatAK-Codex — 提供商配置</Text>
+        <Text bold color="cyan">⚡ Tikat-Codex — 提供商配置</Text>
       </Box>
 
       {step === 'select-preset' && (

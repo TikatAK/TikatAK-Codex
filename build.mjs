@@ -1,4 +1,4 @@
-// TikatAK-Codex build script — esbuild based
+// Tikat-Codex build script — esbuild based
 import * as esbuild from 'esbuild'
 import { readFileSync } from 'fs'
 
@@ -17,7 +17,7 @@ const config = {
     js: "#!/usr/bin/env node --no-deprecation\nimport { createRequire } from 'module';\nconst require = createRequire(import.meta.url);",
   },
   define: {
-    'process.env.TIKATAK_VERSION': JSON.stringify(pkg.version),
+    'process.env.TIKAT_VERSION': JSON.stringify(pkg.version),
   },
   // External packages that should NOT be bundled (native modules etc.)
   external: [

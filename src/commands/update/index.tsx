@@ -52,7 +52,7 @@ function UpdateUI({ currentVersion }: UpdateUIProps) {
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1} width={60}>
       <Box marginBottom={1}>
-        <Text bold color="cyan">⚡ TikatAK-Codex 更新检查</Text>
+        <Text bold color="cyan">⚡ Tikat-Codex 更新检查</Text>
       </Box>
 
       {step === 'checking' && (
@@ -97,7 +97,7 @@ function UpdateUI({ currentVersion }: UpdateUIProps) {
       {step === 'error' && (
         <Box flexDirection="column">
           <Text color="red">❌ 更新失败：{message}</Text>
-          <Text color="gray" dimColor>请手动运行: npm install -g github:TikatAK/TikatAK-Codex</Text>
+          <Text color="gray" dimColor>请手动运行: npm install -g github:TikatAK/Tikat-Codex</Text>
         </Box>
       )}
     </Box>
