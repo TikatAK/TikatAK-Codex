@@ -57606,13 +57606,22 @@ async function runAgentLoop(opts) {
   const { system, model, cwd: cwd2, maxRounds = MAX_AGENT_ROUNDS } = opts;
   let messages = [...opts.messages];
   let finalText = "";
+  const WARN_ROUNDS_BEFORE_LIMIT = 3;
   for (let round = 0; round < maxRounds; round++) {
     const { messages: compressed, compressed: wasCompressed } = compressContext(messages);
     if (wasCompressed && opts.onCompressed) {
       const { estimateTokens: estimateTokens2 } = await Promise.resolve().then(() => (init_context(), context_exports));
       opts.onCompressed(estimateTokens2(compressed));
     }
-    const stream = sendMessageStream({ messages: compressed, system, model });
+    const roundsLeft = maxRounds - round;
+    const messagesForThisRound = roundsLeft <= WARN_ROUNDS_BEFORE_LIMIT ? [
+      ...compressed,
+      {
+        role: "user",
+        content: `<system-reminder>You have ${roundsLeft} tool-use round${roundsLeft === 1 ? "" : "s"} remaining. Finish your current step, then provide your final response without starting new tool calls.</system-reminder>`
+      }
+    ] : compressed;
+    const stream = sendMessageStream({ messages: messagesForThisRound, system, model });
     let textContent = "";
     let inputTokens = 0;
     let outputTokens = 0;
@@ -58325,7 +58334,7 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
         ...hitRoundLimit && {
           display: [
             ...s2.display,
-            { role: "assistant", content: `\u26A0\uFE0F \u5DF2\u8FBE\u5230\u6700\u5927\u5DE5\u5177\u8C03\u7528\u8F6E\u6570 (${MAX_AGENT_ROUNDS})\uFF0C\u81EA\u52A8\u505C\u6B62\u6267\u884C\u3002` }
+            { role: "assistant", content: `\u5DF2\u5B8C\u6210 ${MAX_AGENT_ROUNDS} \u8F6E\u5DE5\u5177\u8C03\u7528\u3002\u5982\u679C\u4EFB\u52A1\u5C1A\u672A\u5B8C\u6210\uFF0C\u8BF7\u7EE7\u7EED\u63CF\u8FF0\u4E0B\u4E00\u6B65\u9700\u8981\u505A\u4EC0\u4E48\u3002` }
           ]
         }
       }));

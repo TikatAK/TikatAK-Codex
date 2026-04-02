@@ -157,7 +157,7 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
         ...(hitRoundLimit && {
           display: [
             ...s.display,
-            { role: 'assistant' as const, content: `⚠️ 已达到最大工具调用轮数 (${MAX_AGENT_ROUNDS})，自动停止执行。` },
+            { role: 'assistant' as const, content: `已完成 ${MAX_AGENT_ROUNDS} 轮工具调用。如果任务尚未完成，请继续描述下一步需要做什么。` },
           ],
         }),
       }))

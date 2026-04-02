@@ -40,6 +40,9 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
   let messages = [...opts.messages]
   let finalText = ''
 
+  // Warn the model when it's 3 rounds from the limit, so it can wrap up gracefully
+  const WARN_ROUNDS_BEFORE_LIMIT = 3
+
   for (let round = 0; round < maxRounds; round++) {
     const { messages: compressed, compressed: wasCompressed } = compressContext(messages)
     if (wasCompressed && opts.onCompressed) {
@@ -47,7 +50,20 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
       opts.onCompressed(estimateTokens(compressed))
     }
 
-    const stream = sendMessageStream({ messages: compressed, system, model })
+    // Inject a wrap-up reminder when approaching the round limit
+    const roundsLeft = maxRounds - round
+    const messagesForThisRound =
+      roundsLeft <= WARN_ROUNDS_BEFORE_LIMIT
+        ? [
+            ...compressed,
+            {
+              role: 'user' as const,
+              content: `<system-reminder>You have ${roundsLeft} tool-use round${roundsLeft === 1 ? '' : 's'} remaining. Finish your current step, then provide your final response without starting new tool calls.</system-reminder>`,
+            },
+          ]
+        : compressed
+
+    const stream = sendMessageStream({ messages: messagesForThisRound, system, model })
 
     let textContent = ''
     let inputTokens = 0
