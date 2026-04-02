@@ -4,7 +4,8 @@ import { isProviderConfigured } from './providers/activeProvider.js'
 import { providerCommand } from './commands/provider/index.js'
 import { sendMessageStream } from './services/api/claude.js'
 import { checkForUpdates } from './utils/updater.js'
-import { BASE_SYSTEM_PROMPT } from './constants/prompts.js'
+import { buildSystemPrompt } from './constants/prompts.js'
+import { readClaudeMd, getGitContext, getEnvContext } from './utils/context/session.js'
 
 const VERSION = process.env['TIKAT_VERSION'] ?? '0.1.0'
 
@@ -85,6 +86,12 @@ async function runNonInteractive(prompt: string, model?: string): Promise<void> 
   const { compressContext } = await import('./utils/context/index.js')
   const cwd = getCwd()
 
+  const systemPrompt = buildSystemPrompt({
+    claudeMd: readClaudeMd(cwd) ?? undefined,
+    gitContext: getGitContext(cwd) ?? undefined,
+    envInfo: getEnvContext(),
+  })
+
   const MAX_ROUNDS = 50
   let messages: import('./adapters/openai/index.js').AnthropicMessage[] = [
     { role: 'user', content: prompt },
@@ -96,7 +103,7 @@ async function runNonInteractive(prompt: string, model?: string): Promise<void> 
 
       const stream = sendMessageStream({
         messages: compressed,
-        system: `${BASE_SYSTEM_PROMPT}\nWorking directory: ${cwd}`,
+        system: systemPrompt,
         ...(model !== undefined ? { model } : {}),
       })
 

@@ -3,6 +3,7 @@ import type { ToolDef, ToolContext, ToolResult } from '../base.js'
 import { sendMessage } from '../../services/api/claude.js'
 import { executeTools } from '../../services/api/toolExecutor.js'
 import { SUB_AGENT_TOOL_SCHEMAS } from '../index.js'
+import { BASE_SYSTEM_PROMPT } from '../../constants/prompts.js'
 import type { AnthropicMessage, AnthropicBlock, AnthropicTool } from '../../adapters/openai/index.js'
 import type { AnthropicToolUseBlock } from '../../adapters/openai/responseAdapter.js'
 
@@ -15,7 +16,7 @@ const inputSchema = z.object({
 
 type Input = z.infer<typeof inputSchema>
 
-const SUB_AGENT_SYSTEM = `You are a focused sub-agent. Complete the given task precisely and concisely.
+const SUB_AGENT_SUFFIX = `\n\nYou are operating as a focused sub-agent. Complete the given task precisely.
 Use tools as needed. Return a clear summary of what you did and what the result was.
 Do not ask clarifying questions — make reasonable assumptions and complete the task.`
 
@@ -32,7 +33,7 @@ export const SubAgentTool: ToolDef<Input, string> = {
   inputSchema,
 
   async execute(input: Input, context: ToolContext): Promise<ToolResult<string>> {
-    const systemPrompt = `${SUB_AGENT_SYSTEM}\nWorking directory: ${context.cwd}`
+    const systemPrompt = `${BASE_SYSTEM_PROMPT}${SUB_AGENT_SUFFIX}\nWorking directory: ${context.cwd}`
     const userContent = input.context
       ? `Context:\n${input.context}\n\nTask:\n${input.task}`
       : input.task

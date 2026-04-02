@@ -7,7 +7,8 @@ import { getCwd } from '../utils/cwd.js'
 import { saveSession, loadSession, listSessions, deleteSession } from '../utils/sessions/index.js'
 import { compressContext, estimateTokens } from '../utils/context/index.js'
 import { highlight } from '../utils/highlight/index.js'
-import { BASE_SYSTEM_PROMPT } from '../constants/prompts.js'
+import { buildSystemPrompt } from '../constants/prompts.js'
+import { readClaudeMd, getGitContext, getEnvContext } from '../utils/context/session.js'
 import type { AnthropicMessage, AnthropicBlock } from '../adapters/openai/index.js'
 import type { AnthropicToolUseBlock, AnthropicTextBlock } from '../adapters/openai/responseAdapter.js'
 
@@ -53,6 +54,13 @@ interface ReplState {
 function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOptions) {
   const { exit } = useApp()
   const cwd = getCwd()
+
+  // Build system prompt once with git context, CLAUDE.md, and env info
+  const systemPrompt = buildSystemPrompt({
+    claudeMd: readClaudeMd(cwd) ?? undefined,
+    gitContext: getGitContext(cwd) ?? undefined,
+    envInfo: getEnvContext(),
+  })
 
   // Optionally restore a previous session
   const restoredSession = resumeSessionId ? loadSession(resumeSessionId) : null
@@ -111,7 +119,7 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
         // ── Consume stream and reconstruct response ──────────────────────
         const streamGen = sendMessageStream({
           messages: compressedMessages,
-          system: `${BASE_SYSTEM_PROMPT}\nWorking directory: ${cwd}`,
+          system: systemPrompt,
           model: currentState.model,
         })
 
