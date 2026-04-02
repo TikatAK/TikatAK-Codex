@@ -16,7 +16,6 @@
   },
   "type": "module",
   "scripts": {
-    "prepare": "node build.mjs",
     "test": "vitest run",
     "build": "node build.mjs",
     "dev": "node build.mjs --watch",
