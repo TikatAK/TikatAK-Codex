@@ -2,6 +2,11 @@
   "name": "tikat-codex",
   "version": "1.4.4",
   "description": "An AI coding assistant CLI that works with any OpenAI-compatible provider",
+  "files": [
+    "dist/",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "bin": {
     "codex": "./dist/cli.js",
     "tikat-codex": "./dist/cli.js"
