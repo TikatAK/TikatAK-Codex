@@ -51921,6 +51921,7 @@ var init_provider = __esm({
 var updater_exports = {};
 __export(updater_exports, {
   checkForUpdates: () => checkForUpdates,
+  fetchLatestRelease: () => fetchLatestRelease,
   fetchLatestVersion: () => fetchLatestVersion,
   performUpdate: () => performUpdate
 });
@@ -51934,12 +51935,40 @@ function isNewer(a2, b2) {
   if (bMinor !== aMinor) return bMinor > aMinor;
   return bPatch > aPatch;
 }
+async function fetchWithTimeout(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "tikat-codex-updater" }
+    });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+async function fetchLatestRelease() {
+  try {
+    const res = await fetchWithTimeout(GITHUB_RELEASES_API);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const tag = data.tag_name;
+    if (!tag) return null;
+    const version = tag.replace(/^v/, "");
+    const tgzAsset = data.assets?.find((a2) => a2.name.endsWith(".tgz"));
+    if (!tgzAsset) {
+      const tarballUrl = `https://github.com/${GITHUB_REPO}/releases/download/${tag}/tikat-codex-${version}.tgz`;
+      return { version, tarballUrl };
+    }
+    return { version, tarballUrl: tgzAsset.browser_download_url };
+  } catch {
+    return null;
+  }
+}
 async function fetchLatestVersion() {
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
-    const res = await fetch(GITHUB_RAW_URL, { signal: controller.signal });
-    clearTimeout(timer);
+    const res = await fetchWithTimeout(GITHUB_RAW_URL);
     if (!res.ok) return null;
     const pkg = await res.json();
     return typeof pkg.version === "string" ? pkg.version : null;
@@ -51957,19 +51986,24 @@ async function checkForUpdates(currentVersion) {
   };
 }
 async function performUpdate() {
+  const release2 = await fetchLatestRelease();
+  if (!release2) {
+    return { ok: false, error: "Failed to fetch latest release info from GitHub" };
+  }
+  const { tarballUrl } = release2;
   const isWindows3 = process.platform === "win32";
   try {
     if (isWindows3) {
       const { spawn } = await import("child_process");
       const child = spawn(
         "cmd.exe",
-        ["/c", `timeout /t 3 /nobreak > nul && npm install -g github:${GITHUB_REPO}`],
+        ["/c", `timeout /t 3 /nobreak > nul && npm install -g "${tarballUrl}"`],
         { detached: true, stdio: "ignore", shell: false }
       );
       child.unref();
       return { ok: true, deferred: true };
     } else {
-      await execFileAsync("npm", ["install", "-g", `github:${GITHUB_REPO}`], {
+      await execFileAsync("npm", ["install", "-g", tarballUrl], {
         timeout: 12e4
       });
       return { ok: true };
@@ -51978,14 +52012,15 @@ async function performUpdate() {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
-var execFileAsync, GITHUB_RAW_URL, GITHUB_REPO, CHECK_TIMEOUT_MS;
+var execFileAsync, GITHUB_REPO, GITHUB_RELEASES_API, GITHUB_RAW_URL, CHECK_TIMEOUT_MS;
 var init_updater = __esm({
   "src/utils/updater.ts"() {
     "use strict";
     execFileAsync = promisify(execFile);
-    GITHUB_RAW_URL = "https://raw.githubusercontent.com/TikatAK/Tikat-Codex/master/package.json";
     GITHUB_REPO = "TikatAK/Tikat-Codex";
-    CHECK_TIMEOUT_MS = 5e3;
+    GITHUB_RELEASES_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+    GITHUB_RAW_URL = "https://raw.githubusercontent.com/TikatAK/Tikat-Codex/master/package.json";
+    CHECK_TIMEOUT_MS = 8e3;
   }
 });
 
@@ -58463,7 +58498,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.4.6";
+        const VERSION3 = "1.4.7";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -58599,7 +58634,7 @@ init_prompts();
 init_session();
 init_loop();
 init_cwd();
-var VERSION2 = "1.4.6";
+var VERSION2 = "1.4.7";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);

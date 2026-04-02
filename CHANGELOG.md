@@ -4,6 +4,15 @@
 
 ---
 
+## [1.4.7] - 2026-04-02
+
+### 修复
+- **`codex update` 无法安装新版本**：自动更新命令 `performUpdate()` 仍在使用 `github:TikatAK/Tikat-Codex` 的 git dep 方式，在 npm 11+ 上安装完立即失效（Junction 悬空）。改为通过 GitHub Releases API 动态获取最新 tarball 的下载地址，再用 `npm install -g <tarball-url>` 安装，彻底消除悬空问题
+- **版本检查超时从 5s 提升到 8s**：避免网络慢时误判为无更新
+- 新增 `fetchLatestRelease()` 函数，从 Releases API 获取版本号和 tarball 地址，`performUpdate()` 直接使用该地址
+
+---
+
 ## [1.4.6] - 2026-04-02
 
 ### 修复
