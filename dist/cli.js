@@ -57481,15 +57481,20 @@ async function performUpdate() {
   const isWindows3 = process.platform === "win32";
   try {
     if (isWindows3) {
-      await execFileAsync3("cmd.exe", ["/c", "npm", "install", "-g", `github:${GITHUB_REPO}`], {
-        timeout: 12e4
-      });
+      const { spawn } = await import("child_process");
+      const child = spawn(
+        "cmd.exe",
+        ["/c", `timeout /t 3 /nobreak > nul && npm install -g github:${GITHUB_REPO}`],
+        { detached: true, stdio: "ignore", shell: false }
+      );
+      child.unref();
+      return { ok: true, deferred: true };
     } else {
       await execFileAsync3("npm", ["install", "-g", `github:${GITHUB_REPO}`], {
         timeout: 12e4
       });
+      return { ok: true };
     }
-    return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
@@ -57599,7 +57604,10 @@ function UpdateUI({ currentVersion }) {
       if (input === "y" || input === "Y" || key.return) {
         setStep("updating");
         performUpdate().then((result) => {
-          if (result.ok) {
+          if (result.ok && result.deferred) {
+            setStep("deferred");
+            setTimeout(() => exit(), 2e3);
+          } else if (result.ok) {
             setStep("done");
             setTimeout(() => exit(), 2e3);
           } else {
@@ -57611,7 +57619,7 @@ function UpdateUI({ currentVersion }) {
       } else if (input === "n" || input === "N" || key.escape) {
         exit();
       }
-    } else if (step === "up-to-date" || step === "done" || step === "error") {
+    } else if (step === "up-to-date" || step === "done" || step === "deferred" || step === "error") {
       exit();
     }
   });
@@ -57654,6 +57662,10 @@ function UpdateUI({ currentVersion }) {
         latestVersion
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Text, { color: "gray", dimColor: true, children: "\u91CD\u65B0\u8FD0\u884C codex \u5373\u53EF\u4F7F\u7528\u65B0\u7248\u672C" })
+    ] }),
+    step === "deferred" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(Box_default, { flexDirection: "column", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Text, { color: "green", bold: true, children: "\u2705 \u66F4\u65B0\u5DF2\u5728\u540E\u53F0\u542F\u52A8" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Text, { color: "gray", dimColor: true, children: "\u7EA6 5 \u79D2\u540E\u66F4\u65B0\u5B8C\u6210\uFF0C\u91CD\u65B0\u8FD0\u884C codex \u5373\u53EF\u4F7F\u7528\u65B0\u7248\u672C" })
     ] }),
     step === "error" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(Box_default, { flexDirection: "column", children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(Text, { color: "red", children: [
@@ -58452,7 +58464,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.4.1";
+        const VERSION3 = "1.4.2";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -58598,7 +58610,7 @@ init_claude();
 init_updater();
 init_prompts();
 init_session();
-var VERSION2 = "1.4.1";
+var VERSION2 = "1.4.2";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);

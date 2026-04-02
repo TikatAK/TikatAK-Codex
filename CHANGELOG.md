@@ -4,6 +4,14 @@
 
 ---
 
+## [1.4.2] - 2026-04-02
+
+### 修复
+- **Windows 更新 EPERM 错误**：`codex update` 在 Windows 上会因当前进程占用 `dist/cli.js` 导致 npm 报 EPERM (-4048) 权限错误。修复方案：改为将 npm install 命令以完全独立的后台进程启动（延迟 3 秒等待当前进程退出释放文件锁），然后当前进程立即退出。更新界面新增"后台更新已启动"提示状态。
+- **内部命名残留清理**：`prompts.ts` 参数名 `claudeMd` → `projectInstructions`；注释中 "CLAUDE.md" → "TIKAT.md"；`TodoWriteTool` 目录路径 `.Tikat-Codex` → `.tikat-codex`（小写，跨平台一致）
+
+---
+
 ## [1.4.1] - 2026-04-02
 
 ### 改进

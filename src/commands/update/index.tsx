@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Box, Text, useInput, useApp, render } from 'ink'
 import { checkForUpdates, performUpdate } from '../../utils/updater.js'
 
-type Step = 'checking' | 'up-to-date' | 'prompt' | 'updating' | 'done' | 'error'
+type Step = 'checking' | 'up-to-date' | 'prompt' | 'updating' | 'done' | 'deferred' | 'error'
 
 interface UpdateUIProps {
   currentVersion: string
@@ -32,7 +32,10 @@ function UpdateUI({ currentVersion }: UpdateUIProps) {
       if (input === 'y' || input === 'Y' || key.return) {
         setStep('updating')
         performUpdate().then(result => {
-          if (result.ok) {
+          if (result.ok && result.deferred) {
+            setStep('deferred')
+            setTimeout(() => exit(), 2000)
+          } else if (result.ok) {
             setStep('done')
             setTimeout(() => exit(), 2000)
           } else {
@@ -44,7 +47,7 @@ function UpdateUI({ currentVersion }: UpdateUIProps) {
       } else if (input === 'n' || input === 'N' || key.escape) {
         exit()
       }
-    } else if (step === 'up-to-date' || step === 'done' || step === 'error') {
+    } else if (step === 'up-to-date' || step === 'done' || step === 'deferred' || step === 'error') {
       exit()
     }
   })
@@ -91,6 +94,13 @@ function UpdateUI({ currentVersion }: UpdateUIProps) {
         <Box flexDirection="column">
           <Text color="green" bold>🎉 更新成功！已安装 v{latestVersion}</Text>
           <Text color="gray" dimColor>重新运行 codex 即可使用新版本</Text>
+        </Box>
+      )}
+
+      {step === 'deferred' && (
+        <Box flexDirection="column">
+          <Text color="green" bold>✅ 更新已在后台启动</Text>
+          <Text color="gray" dimColor>约 5 秒后更新完成，重新运行 codex 即可使用新版本</Text>
         </Box>
       )}
 

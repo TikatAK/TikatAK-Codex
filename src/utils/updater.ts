@@ -59,22 +59,33 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateInf
 
 /**
  * Install the latest version from GitHub globally.
- * Returns { ok, error }.
+ * Returns { ok, deferred?, error }.
+ *
+ * On Windows the current Node process holds dist/cli.js open, so npm cannot
+ * overwrite it while we are running (EPERM / errno -4048).
+ * Fix: spawn the install as a fully detached background process that starts
+ * after a 3-second delay (giving the current process time to exit and release
+ * the file locks), then exit immediately.
  */
-export async function performUpdate(): Promise<{ ok: boolean; error?: string }> {
+export async function performUpdate(): Promise<{ ok: boolean; deferred?: boolean; error?: string }> {
   const isWindows = process.platform === 'win32'
   try {
     if (isWindows) {
-      // On Windows, npm is a batch script (npm.cmd). Use cmd.exe /c to invoke it safely.
-      await execFileAsync('cmd.exe', ['/c', 'npm', 'install', '-g', `github:${GITHUB_REPO}`], {
-        timeout: 120_000,
-      })
+      const { spawn } = await import('child_process')
+      // Use cmd.exe /c so that && chaining works without shell:true quirks.
+      const child = spawn(
+        'cmd.exe',
+        ['/c', `timeout /t 3 /nobreak > nul && npm install -g github:${GITHUB_REPO}`],
+        { detached: true, stdio: 'ignore', shell: false },
+      )
+      child.unref()
+      return { ok: true, deferred: true }
     } else {
       await execFileAsync('npm', ['install', '-g', `github:${GITHUB_REPO}`], {
         timeout: 120_000,
       })
+      return { ok: true }
     }
-    return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }
   }
