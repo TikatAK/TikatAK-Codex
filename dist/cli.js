@@ -5337,7 +5337,7 @@ var require_react_development = __commonJS({
           var dispatcher = resolveDispatcher();
           return dispatcher.useReducer(reducer, initialArg, init2);
         }
-        function useRef(initialValue) {
+        function useRef2(initialValue) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useRef(initialValue);
         }
@@ -6131,7 +6131,7 @@ var require_react_development = __commonJS({
         exports.useLayoutEffect = useLayoutEffect2;
         exports.useMemo = useMemo3;
         exports.useReducer = useReducer;
-        exports.useRef = useRef;
+        exports.useRef = useRef2;
         exports.useState = useState5;
         exports.useSyncExternalStore = useSyncExternalStore;
         exports.useTransition = useTransition;
@@ -57167,6 +57167,116 @@ var init_WebFetchTool = __esm({
   }
 });
 
+// src/tools/WebSearchTool/index.ts
+var TIMEOUT_MS3, MAX_RESULTS3, inputSchema9, WebSearchTool;
+var init_WebSearchTool = __esm({
+  "src/tools/WebSearchTool/index.ts"() {
+    "use strict";
+    init_zod();
+    TIMEOUT_MS3 = 15e3;
+    MAX_RESULTS3 = 10;
+    inputSchema9 = external_exports.object({
+      query: external_exports.string().describe("The search query"),
+      max_results: external_exports.number().optional().describe(`Maximum number of results to return (default: 5, max: ${MAX_RESULTS3})`)
+    });
+    WebSearchTool = {
+      name: "WebSearch",
+      description: "Search the web using DuckDuckGo Instant Answer API. Returns abstracts, answers, and relevant links for a query. Useful for looking up documentation, current events, or any information requiring web knowledge.",
+      inputSchema: inputSchema9,
+      async execute(input, _context) {
+        const maxResults = Math.min(input.max_results ?? 5, MAX_RESULTS3);
+        const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(input.query)}&format=json&no_html=1&skip_disambig=1`;
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), TIMEOUT_MS3);
+          const res = await fetch(url, {
+            signal: controller.signal,
+            headers: { "User-Agent": "Tikat-Codex/1.4.7" }
+          }).finally(() => clearTimeout(timer));
+          if (!res.ok) {
+            return { content: `Search failed: HTTP ${res.status}`, isError: true };
+          }
+          const data = await res.json();
+          const lines = [];
+          if (data.Answer) {
+            lines.push(`**Answer:** ${data.Answer}`);
+            lines.push("");
+          }
+          if (data.AbstractText && data.AbstractURL) {
+            lines.push(`**Featured Snippet:** ${data.AbstractText}`);
+            lines.push(`Source: ${data.AbstractURL}${data.AbstractSource ? ` (${data.AbstractSource})` : ""}`);
+            lines.push("");
+          }
+          const results = [];
+          for (const r2 of data.Results ?? []) {
+            if (r2.Text && r2.FirstURL) results.push({ text: r2.Text, url: r2.FirstURL });
+          }
+          for (const t2 of data.RelatedTopics ?? []) {
+            if (t2.Topics) {
+              for (const sub of t2.Topics) {
+                if (sub.Text && sub.FirstURL) results.push({ text: sub.Text, url: sub.FirstURL });
+              }
+            } else if (t2.Text && t2.FirstURL) {
+              results.push({ text: t2.Text, url: t2.FirstURL });
+            }
+          }
+          if (results.length === 0 && lines.length === 0) {
+            return {
+              content: `No results found for: "${input.query}". Try a different query or use WebFetch to visit a specific URL.`
+            };
+          }
+          if (results.length > 0) {
+            lines.push(`**Search Results** (${Math.min(results.length, maxResults)} of ${results.length}):`);
+            for (let i2 = 0; i2 < Math.min(results.length, maxResults); i2++) {
+              const r2 = results[i2];
+              const text = r2.text.length > 200 ? r2.text.slice(0, 197) + "..." : r2.text;
+              lines.push(`${i2 + 1}. ${text}`);
+              lines.push(`   ${r2.url}`);
+            }
+          }
+          return { content: lines.join("\n") };
+        } catch (err) {
+          if (err instanceof Error && err.name === "AbortError") {
+            return { content: `Search timed out after ${TIMEOUT_MS3}ms`, isError: true };
+          }
+          return { content: `Search error: ${String(err)}`, isError: true };
+        }
+      }
+    };
+  }
+});
+
+// src/tools/AskUserTool/index.ts
+var inputSchema10, AskUserTool;
+var init_AskUserTool = __esm({
+  "src/tools/AskUserTool/index.ts"() {
+    "use strict";
+    init_zod();
+    inputSchema10 = external_exports.object({
+      question: external_exports.string().describe("The question to ask the user"),
+      choices: external_exports.array(external_exports.string()).optional().describe("Optional list of suggested choices to present (user can still type freely)")
+    });
+    AskUserTool = {
+      name: "AskUser",
+      description: "Pause execution and ask the user a clarifying question, then wait for their response. Use when you need information or a decision from the user before proceeding. Optionally provide choices to guide their answer.",
+      inputSchema: inputSchema10,
+      async execute(input, context) {
+        if (!context.askUser) {
+          return {
+            content: "AskUser is not available in this context (non-interactive mode). Use your best judgment and proceed."
+          };
+        }
+        try {
+          const answer = await context.askUser(input.question, input.choices);
+          return { content: answer.trim() || "(no response)" };
+        } catch (err) {
+          return { content: `Failed to get user input: ${String(err)}`, isError: true };
+        }
+      }
+    };
+  }
+});
+
 // src/tools/TodoWriteTool/index.ts
 import { readFileSync as readFileSync5, writeFileSync as writeFileSync4, existsSync as existsSync7, mkdirSync as mkdirSync3 } from "fs";
 import { homedir as homedir2 } from "os";
@@ -57183,13 +57293,13 @@ function writeTodos(todos) {
   mkdirSync3(join9(homedir2(), ".tikat-codex"), { recursive: true });
   writeFileSync4(TODO_FILE, JSON.stringify(todos, null, 2), "utf8");
 }
-var TODO_FILE, inputSchema9, TodoWriteTool, TodoReadTool;
+var TODO_FILE, inputSchema11, TodoWriteTool, TodoReadTool;
 var init_TodoWriteTool = __esm({
   "src/tools/TodoWriteTool/index.ts"() {
     "use strict";
     init_zod();
     TODO_FILE = join9(homedir2(), ".tikat-codex", "todos.json");
-    inputSchema9 = external_exports.object({
+    inputSchema11 = external_exports.object({
       todos: external_exports.array(external_exports.object({
         id: external_exports.string(),
         content: external_exports.string(),
@@ -57200,7 +57310,7 @@ var init_TodoWriteTool = __esm({
     TodoWriteTool = {
       name: "TodoWrite",
       description: "Write the todo list. Replaces the entire todo list with the provided todos. Use to create, update, or manage task tracking.",
-      inputSchema: inputSchema9,
+      inputSchema: inputSchema11,
       async execute(input, _context) {
         const ids = input.todos.map((t2) => t2.id);
         const dupeIds = ids.filter((id, i2) => ids.indexOf(id) !== i2);
@@ -57310,7 +57420,7 @@ var init_constants = __esm({
 });
 
 // src/tools/SubAgentTool/index.ts
-var MAX_TOOL_ROUNDS, inputSchema10, SUB_AGENT_SUFFIX, SubAgentTool;
+var MAX_TOOL_ROUNDS, inputSchema12, SUB_AGENT_SUFFIX, SubAgentTool;
 var init_SubAgentTool = __esm({
   "src/tools/SubAgentTool/index.ts"() {
     "use strict";
@@ -57321,7 +57431,7 @@ var init_SubAgentTool = __esm({
     init_prompts();
     init_constants();
     MAX_TOOL_ROUNDS = MAX_SUBAGENT_ROUNDS;
-    inputSchema10 = external_exports.object({
+    inputSchema12 = external_exports.object({
       task: external_exports.string().describe("The task to perform. Be specific and self-contained."),
       context: external_exports.string().optional().describe("Additional context or files to be aware of.")
     });
@@ -57333,7 +57443,7 @@ Do not ask clarifying questions \u2014 make reasonable assumptions and complete 
     SubAgentTool = {
       name: "SubAgent",
       description: "Spawn a sub-agent to handle a focused, self-contained task in parallel. Useful for breaking large tasks into independent parts. Returns a text summary of what the sub-agent did.",
-      inputSchema: inputSchema10,
+      inputSchema: inputSchema12,
       async execute(input, context) {
         const systemPrompt = `${BASE_SYSTEM_PROMPT}${SUB_AGENT_SUFFIX}
 Working directory: ${context.cwd}`;
@@ -57445,6 +57555,8 @@ var init_tools = __esm({
     init_GlobTool();
     init_LSTool();
     init_WebFetchTool();
+    init_WebSearchTool();
+    init_AskUserTool();
     init_TodoWriteTool();
     init_SubAgentTool();
     init_base2();
@@ -57457,6 +57569,8 @@ var init_tools = __esm({
       GlobTool,
       LSTool,
       WebFetchTool,
+      WebSearchTool,
+      AskUserTool,
       TodoWriteTool,
       TodoReadTool,
       SubAgentTool
@@ -57692,7 +57806,7 @@ async function runAgentLoop(opts) {
       messages = [...messages, { role: "assistant", content: contentBlocks }];
       return { messages, finalText, hitRoundLimit: false };
     }
-    const results = await executeTools(toolUseBlocks, { cwd: cwd2, signal: void 0 });
+    const results = await executeTools(toolUseBlocks, { cwd: cwd2, signal: void 0, askUser: opts.onAskUser });
     opts.onToolResult?.(results);
     messages = [
       ...messages,
@@ -58296,6 +58410,7 @@ function historyToDisplay(history) {
 function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
   const { exit } = use_app_default();
   const cwd2 = getCwd();
+  const pendingAskRef = (0, import_react25.useRef)(null);
   const systemPrompt = buildSystemPrompt({
     projectInstructions: readProjectInstructions(cwd2) ?? void 0,
     gitContext: getGitContext(cwd2) ?? void 0,
@@ -58358,7 +58473,11 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
           ...s2,
           streamingText: "",
           display: text ? [...s2.display, { role: "assistant", content: text, usage: { input: inputTokens, output: outputTokens } }] : s2.display
-        }))
+        })),
+        onAskUser: (question, choices) => new Promise((resolve) => {
+          pendingAskRef.current = resolve;
+          setState((s2) => ({ ...s2, inputBuffer: "", status: { type: "asking", question, choices } }));
+        })
       });
       const meta = saveSession(currentState.sessionId, messages, currentState.model);
       setState((s2) => ({
@@ -58381,6 +58500,15 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
   const submit = (0, import_react25.useCallback)((input) => {
     const trimmed = input.trim();
     if (!trimmed) return;
+    if (state.status.type === "asking") {
+      const resolve = pendingAskRef.current;
+      if (resolve) {
+        pendingAskRef.current = null;
+        setState((s2) => ({ ...s2, inputBuffer: "", status: { type: "streaming" } }));
+        resolve(trimmed);
+      }
+      return;
+    }
     if (trimmed.startsWith("/")) {
       void handleSlashCommand(trimmed, state, setState, exit);
       return;
@@ -58391,7 +58519,8 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
     void runAgentLoop2(trimmed, state);
   }, [state, runAgentLoop2, exit]);
   use_input_default((input, key) => {
-    if (state.status.type !== "idle" && state.status.type !== "error") {
+    const allowInput = state.status.type === "idle" || state.status.type === "error" || state.status.type === "asking";
+    if (!allowInput) {
       if (key.ctrl && input === "c") exit();
       return;
     }
@@ -58415,6 +58544,7 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
     if (initialPrompt) void runAgentLoop2(initialPrompt, state);
   }, []);
   const isBusy = state.status.type === "streaming" || state.status.type === "thinking" || state.status.type === "tool";
+  const isAsking = state.status.type === "asking";
   return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { flexDirection: "column", paddingX: 1, paddingY: 1, children: [
     /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { marginBottom: 1, borderStyle: "single", borderColor: "cyan", paddingX: 1, children: [
       /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { bold: true, color: "cyan", children: "\u26A1 Tikat-Codex" }),
@@ -58466,11 +58596,24 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
       "\u274C ",
       state.status.message
     ] }) }),
+    isAsking && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { flexDirection: "column", marginBottom: 1, borderStyle: "single", borderColor: "magenta", paddingX: 1, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "magenta", bold: true, children: "\u2753 Codex \u63D0\u95EE:" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { paddingLeft: 2, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { wrap: "wrap", children: state.status.question }) }),
+      state.status.choices && state.status.choices.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { paddingLeft: 2, flexDirection: "column", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "gray", dimColor: true, children: "\u53EF\u9009\u9879:" }),
+        state.status.choices.map((c2, i2) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Text, { color: "gray", children: [
+          "  ",
+          i2 + 1,
+          ". ",
+          c2
+        ] }, i2))
+      ] })
+    ] }),
     state.info && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { marginBottom: 1, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "gray", children: state.info }) }),
     !isBusy ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Box_default, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "green", bold: true, children: "\u25B6 " }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: isAsking ? "magenta" : "green", bold: true, children: isAsking ? "\u21A9 " : "\u25B6 " }),
       /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { children: state.inputBuffer }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "green", bold: true, children: "\u2588" })
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: isAsking ? "magenta" : "green", bold: true, children: "\u2588" })
     ] }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Box_default, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(Text, { color: "gray", dimColor: true, children: "Ctrl+C \u4E2D\u65AD" }) })
   ] });
 }
@@ -58498,7 +58641,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.4.7";
+        const VERSION3 = "1.4.8";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -58634,7 +58777,7 @@ init_prompts();
 init_session();
 init_loop();
 init_cwd();
-var VERSION2 = "1.4.7";
+var VERSION2 = "1.4.8";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);

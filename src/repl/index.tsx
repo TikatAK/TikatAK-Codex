@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { Box, Text, useInput, useApp, render } from 'ink'
 import { providerCommand } from '../commands/provider/index.js'
 import { getCwd } from '../utils/cwd.js'
@@ -26,6 +26,7 @@ type AgentStatus =
   | { type: 'streaming' }
   | { type: 'thinking' }
   | { type: 'tool'; toolName: string }
+  | { type: 'asking'; question: string; choices?: string[] }
   | { type: 'error'; message: string }
 
 interface DisplayMessage {
@@ -67,6 +68,8 @@ function historyToDisplay(history: AnthropicMessage[]): DisplayMessage[] {
 function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOptions) {
   const { exit } = useApp()
   const cwd = getCwd()
+  // Resolver for pending AskUser tool calls
+  const pendingAskRef = useRef<((answer: string) => void) | null>(null)
 
   // Build system prompt once with git context, TIKAT.md, and env info
   const systemPrompt = buildSystemPrompt({
@@ -146,6 +149,11 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
               ? [...s.display, { role: 'assistant' as const, content: text, usage: { input: inputTokens, output: outputTokens } }]
               : s.display,
           })),
+        onAskUser: (question, choices) =>
+          new Promise<string>(resolve => {
+            pendingAskRef.current = resolve
+            setState(s => ({ ...s, inputBuffer: '', status: { type: 'asking', question, choices } }))
+          }),
       })
 
       const meta = saveSession(currentState.sessionId, messages, currentState.model)
@@ -171,6 +179,17 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
     const trimmed = input.trim()
     if (!trimmed) return
 
+    // Handle AskUser response: resolve the pending promise and resume the agent loop
+    if (state.status.type === 'asking') {
+      const resolve = pendingAskRef.current
+      if (resolve) {
+        pendingAskRef.current = null
+        setState(s => ({ ...s, inputBuffer: '', status: { type: 'streaming' } }))
+        resolve(trimmed)
+      }
+      return
+    }
+
     if (trimmed.startsWith('/')) {
       void handleSlashCommand(trimmed, state, setState, exit)
       return
@@ -184,7 +203,11 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
   }, [state, runAgentLoop, exit])
 
   useInput((input, key) => {
-    if (state.status.type !== 'idle' && state.status.type !== 'error') {
+    const allowInput =
+      state.status.type === 'idle' ||
+      state.status.type === 'error' ||
+      state.status.type === 'asking'
+    if (!allowInput) {
       if (key.ctrl && input === 'c') exit()
       return
     }
@@ -204,6 +227,7 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
   }, [])
 
   const isBusy = state.status.type === 'streaming' || state.status.type === 'thinking' || state.status.type === 'tool'
+  const isAsking = state.status.type === 'asking'
 
   return (
     <Box flexDirection="column" paddingX={1} paddingY={1}>
@@ -276,6 +300,22 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
         </Box>
       )}
 
+      {/* AskUser prompt */}
+      {isAsking && (
+        <Box flexDirection="column" marginBottom={1} borderStyle="single" borderColor="magenta" paddingX={1}>
+          <Text color="magenta" bold>❓ Codex 提问:</Text>
+          <Box paddingLeft={2}><Text wrap="wrap">{state.status.question}</Text></Box>
+          {state.status.choices && state.status.choices.length > 0 && (
+            <Box paddingLeft={2} flexDirection="column">
+              <Text color="gray" dimColor>可选项:</Text>
+              {state.status.choices.map((c, i) => (
+                <Text key={i} color="gray">  {i + 1}. {c}</Text>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+
       {/* Info */}
       {state.info && (
         <Box marginBottom={1}><Text color="gray">{state.info}</Text></Box>
@@ -284,9 +324,9 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }: ReplOp
       {/* Input */}
       {!isBusy ? (
         <Box>
-          <Text color="green" bold>▶ </Text>
+          <Text color={isAsking ? 'magenta' : 'green'} bold>{isAsking ? '↩ ' : '▶ '}</Text>
           <Text>{state.inputBuffer}</Text>
-          <Text color="green" bold>█</Text>
+          <Text color={isAsking ? 'magenta' : 'green'} bold>█</Text>
         </Box>
       ) : (
         <Box>

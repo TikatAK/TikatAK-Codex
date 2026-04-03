@@ -4,6 +4,19 @@
 
 ---
 
+## [1.4.8] - 2026-04-03
+
+### 新增
+- **WebSearch 工具**：通过 DuckDuckGo Instant Answer API 进行网络搜索，返回即时答案、摘要和相关链接，无需 API Key
+- **AskUser 工具**：模型可在执行过程中向用户提问并等待回答，支持显示可选项列表。REPL 显示紫色提问框，用户输入后自动恢复 Agent 执行
+
+### 技术
+- `ToolContext` 新增 `askUser?: (question, choices?) => Promise<string>` 回调字段
+- `AgentLoopOptions` 新增 `onAskUser` 回调，通过 `executeTools` 透传到工具上下文
+- REPL 新增 `asking` 状态，`useInput` 在该状态下允许输入，`submit` 在该状态下解析 pending promise
+
+---
+
 ## [1.4.7] - 2026-04-02
 
 ### 修复

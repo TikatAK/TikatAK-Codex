@@ -13,6 +13,8 @@ export interface ToolDef<TInput = unknown, TOutput = unknown> {
 export interface ToolContext {
   cwd: string
   signal?: AbortSignal
+  /** Optional: pause agent and ask the user a question. Resolves with the user's answer. */
+  askUser?: (question: string, choices?: string[]) => Promise<string>
 }
 
 export interface ToolResult<T = string> {

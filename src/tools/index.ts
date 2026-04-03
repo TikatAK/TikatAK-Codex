@@ -6,6 +6,8 @@ import { GrepTool } from './GrepTool/index.js'
 import { GlobTool } from './GlobTool/index.js'
 import { LSTool } from './LSTool/index.js'
 import { WebFetchTool } from './WebFetchTool/index.js'
+import { WebSearchTool } from './WebSearchTool/index.js'
+import { AskUserTool } from './AskUserTool/index.js'
 import { TodoWriteTool, TodoReadTool } from './TodoWriteTool/index.js'
 import { SubAgentTool } from './SubAgentTool/index.js'
 import { buildToolSchema } from './base.js'
@@ -21,6 +23,8 @@ export const ALL_TOOLS: ToolDef[] = [
   GlobTool,
   LSTool,
   WebFetchTool,
+  WebSearchTool,
+  AskUserTool,
   TodoWriteTool,
   TodoReadTool,
   SubAgentTool,
@@ -49,6 +53,8 @@ export {
   GlobTool,
   LSTool,
   WebFetchTool,
+  WebSearchTool,
+  AskUserTool,
   TodoWriteTool,
   TodoReadTool,
   SubAgentTool,

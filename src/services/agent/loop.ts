@@ -23,6 +23,8 @@ export interface AgentLoopOptions {
   onCompressed?: (estimatedTokens: number) => void
   /** Called at the end of each streaming turn with token usage and text */
   onTurnComplete?: (turn: { text: string; inputTokens: number; outputTokens: number }) => void
+  /** Called when the model uses AskUser tool — pauses loop until promise resolves */
+  onAskUser?: (question: string, choices?: string[]) => Promise<string>
 }
 
 export interface AgentLoopResult {
@@ -105,7 +107,7 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
       return { messages, finalText, hitRoundLimit: false }
     }
 
-    const results = await executeTools(toolUseBlocks, { cwd, signal: undefined })
+    const results = await executeTools(toolUseBlocks, { cwd, signal: undefined, askUser: opts.onAskUser })
     opts.onToolResult?.(results)
 
     messages = [
