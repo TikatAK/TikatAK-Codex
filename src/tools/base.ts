@@ -14,6 +14,12 @@ export interface ToolDef<TInput = unknown, TOutput = unknown> {
 export interface SessionState {
   /** When true, side-effect tools (Bash, FileWrite, FileEdit) are disabled */
   planMode: boolean
+  /** When set, the agent is working in an isolated git worktree */
+  worktreePath?: string
+  /** Branch name of the active worktree */
+  worktreeBranch?: string
+  /** Original cwd before entering the worktree */
+  worktreeMainCwd?: string
 }
 
 export interface ToolContext {

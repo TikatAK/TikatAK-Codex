@@ -4,6 +4,17 @@
 
 ---
 
+## [1.5.1] - 2026-04-03
+
+### 新增
+- **EnterWorktree / ExitWorktree 工具**：在临时 git worktree 隔离分支上工作，不影响主工作区。ExitWorktree 支持可选合并（`merge: true`）和删除分支（`delete_branch: true`）
+
+### 技术
+- `SessionState` 新增 `worktreePath`、`worktreeBranch`、`worktreeMainCwd` 字段
+- 导出 `resolveWorktreePath()` 工具函数供文件工具使用
+
+---
+
 ## [1.5.0] - 2026-04-03
 
 ### 新增

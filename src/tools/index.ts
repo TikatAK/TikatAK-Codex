@@ -9,6 +9,7 @@ import { WebFetchTool } from './WebFetchTool/index.js'
 import { WebSearchTool } from './WebSearchTool/index.js'
 import { AskUserTool } from './AskUserTool/index.js'
 import { EnterPlanModeTool, ExitPlanModeTool } from './PlanModeTool/index.js'
+import { EnterWorktreeTool, ExitWorktreeTool } from './WorktreeTool/index.js'
 import { TodoWriteTool, TodoReadTool, TodoUpdateTool, TodoDeleteTool } from './TodoWriteTool/index.js'
 import { SubAgentTool } from './SubAgentTool/index.js'
 import { buildToolSchema } from './base.js'
@@ -32,6 +33,8 @@ export const ALL_TOOLS: ToolDef[] = [
   TodoDeleteTool,
   EnterPlanModeTool,
   ExitPlanModeTool,
+  EnterWorktreeTool,
+  ExitWorktreeTool,
   SubAgentTool,
 ]
 
@@ -66,6 +69,8 @@ export {
   TodoDeleteTool,
   EnterPlanModeTool,
   ExitPlanModeTool,
+  EnterWorktreeTool,
+  ExitWorktreeTool,
   SubAgentTool,
 }
 export type { ToolDef, ToolContext, ToolResult } from './base.js'

@@ -5979,14 +5979,14 @@ var require_react_development = __commonJS({
               var thenableResult = result;
               var wasAwaited = false;
               var thenable = {
-                then: function(resolve, reject) {
+                then: function(resolve2, reject) {
                   wasAwaited = true;
                   thenableResult.then(function(returnValue2) {
                     popActScope(prevActScopeDepth);
                     if (actScopeDepth === 0) {
-                      recursivelyFlushAsyncActWork(returnValue2, resolve, reject);
+                      recursivelyFlushAsyncActWork(returnValue2, resolve2, reject);
                     } else {
-                      resolve(returnValue2);
+                      resolve2(returnValue2);
                     }
                   }, function(error2) {
                     popActScope(prevActScopeDepth);
@@ -6016,20 +6016,20 @@ var require_react_development = __commonJS({
                   ReactCurrentActQueue.current = null;
                 }
                 var _thenable = {
-                  then: function(resolve, reject) {
+                  then: function(resolve2, reject) {
                     if (ReactCurrentActQueue.current === null) {
                       ReactCurrentActQueue.current = [];
-                      recursivelyFlushAsyncActWork(returnValue, resolve, reject);
+                      recursivelyFlushAsyncActWork(returnValue, resolve2, reject);
                     } else {
-                      resolve(returnValue);
+                      resolve2(returnValue);
                     }
                   }
                 };
                 return _thenable;
               } else {
                 var _thenable2 = {
-                  then: function(resolve, reject) {
-                    resolve(returnValue);
+                  then: function(resolve2, reject) {
+                    resolve2(returnValue);
                   }
                 };
                 return _thenable2;
@@ -6045,7 +6045,7 @@ var require_react_development = __commonJS({
             actScopeDepth = prevActScopeDepth;
           }
         }
-        function recursivelyFlushAsyncActWork(returnValue, resolve, reject) {
+        function recursivelyFlushAsyncActWork(returnValue, resolve2, reject) {
           {
             var queue = ReactCurrentActQueue.current;
             if (queue !== null) {
@@ -6054,16 +6054,16 @@ var require_react_development = __commonJS({
                 enqueueTask(function() {
                   if (queue.length === 0) {
                     ReactCurrentActQueue.current = null;
-                    resolve(returnValue);
+                    resolve2(returnValue);
                   } else {
-                    recursivelyFlushAsyncActWork(returnValue, resolve, reject);
+                    recursivelyFlushAsyncActWork(returnValue, resolve2, reject);
                   }
                 });
               } catch (error2) {
                 reject(error2);
               }
             } else {
-              resolve(returnValue);
+              resolve2(returnValue);
             }
           }
         }
@@ -36330,8 +36330,8 @@ var init_ink = __esm({
         }
       }
       async waitUntilExit() {
-        this.exitPromise ||= new Promise((resolve, reject) => {
-          this.resolveExitPromise = resolve;
+        this.exitPromise ||= new Promise((resolve2, reject) => {
+          this.resolveExitPromise = resolve2;
           this.rejectExitPromise = reject;
         });
         return this.exitPromise;
@@ -39430,7 +39430,7 @@ var require_lib2 = __commonJS({
       let accum = [];
       let accumBytes = 0;
       let abort = false;
-      return new Body.Promise(function(resolve, reject) {
+      return new Body.Promise(function(resolve2, reject) {
         let resTimeout;
         if (_this4.timeout) {
           resTimeout = setTimeout(function() {
@@ -39464,7 +39464,7 @@ var require_lib2 = __commonJS({
           }
           clearTimeout(resTimeout);
           try {
-            resolve(Buffer.concat(accum, accumBytes));
+            resolve2(Buffer.concat(accum, accumBytes));
           } catch (err) {
             reject(new FetchError(`Could not create Buffer from response body for ${_this4.url}: ${err.message}`, "system", err));
           }
@@ -40139,7 +40139,7 @@ var require_lib2 = __commonJS({
         throw new Error("native promise missing, set fetch.Promise to your favorite alternative");
       }
       Body.Promise = fetch3.Promise;
-      return new fetch3.Promise(function(resolve, reject) {
+      return new fetch3.Promise(function(resolve2, reject) {
         const request = new Request3(url, opts);
         const options = getNodeRequestOptions(request);
         const send = (options.protocol === "https:" ? https : http).request;
@@ -40272,7 +40272,7 @@ var require_lib2 = __commonJS({
                   requestOpts.body = void 0;
                   requestOpts.headers.delete("content-length");
                 }
-                resolve(fetch3(new Request3(locationURL, requestOpts)));
+                resolve2(fetch3(new Request3(locationURL, requestOpts)));
                 finalize();
                 return;
             }
@@ -40293,7 +40293,7 @@ var require_lib2 = __commonJS({
           const codings = headers.get("Content-Encoding");
           if (!request.compress || request.method === "HEAD" || codings === null || res.statusCode === 204 || res.statusCode === 304) {
             response = new Response3(body, response_options);
-            resolve(response);
+            resolve2(response);
             return;
           }
           const zlibOptions = {
@@ -40303,7 +40303,7 @@ var require_lib2 = __commonJS({
           if (codings == "gzip" || codings == "x-gzip") {
             body = body.pipe(zlib.createGunzip(zlibOptions));
             response = new Response3(body, response_options);
-            resolve(response);
+            resolve2(response);
             return;
           }
           if (codings == "deflate" || codings == "x-deflate") {
@@ -40315,12 +40315,12 @@ var require_lib2 = __commonJS({
                 body = body.pipe(zlib.createInflateRaw());
               }
               response = new Response3(body, response_options);
-              resolve(response);
+              resolve2(response);
             });
             raw.on("end", function() {
               if (!response) {
                 response = new Response3(body, response_options);
-                resolve(response);
+                resolve2(response);
               }
             });
             return;
@@ -40328,11 +40328,11 @@ var require_lib2 = __commonJS({
           if (codings == "br" && typeof zlib.createBrotliDecompress === "function") {
             body = body.pipe(zlib.createBrotliDecompress());
             response = new Response3(body, response_options);
-            resolve(response);
+            resolve2(response);
             return;
           }
           response = new Response3(body, response_options);
-          resolve(response);
+          resolve2(response);
         });
         writeToStream(req, request);
       });
@@ -45013,8 +45013,8 @@ var init_core = __esm({
     init();
     APIPromise = class _APIPromise extends Promise {
       constructor(responsePromise, parseResponse2 = defaultParseResponse) {
-        super((resolve) => {
-          resolve(null);
+        super((resolve2) => {
+          resolve2(null);
         });
         this.responsePromise = responsePromise;
         this.parseResponse = parseResponse2;
@@ -45565,7 +45565,7 @@ var init_core = __esm({
     isAbsoluteURL = (url) => {
       return startsWithSchemeRegexp.test(url);
     };
-    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    sleep = (ms) => new Promise((resolve2) => setTimeout(resolve2, ms));
     validatePositiveInteger = (name, n2) => {
       if (typeof n2 !== "number" || !Number.isInteger(n2)) {
         throw new OpenAIError(`${name} must be an integer`);
@@ -46026,12 +46026,12 @@ var init_EventStream = __esm({
         _EventStream_errored.set(this, false);
         _EventStream_aborted.set(this, false);
         _EventStream_catchingPromiseCreated.set(this, false);
-        __classPrivateFieldSet7(this, _EventStream_connectedPromise, new Promise((resolve, reject) => {
-          __classPrivateFieldSet7(this, _EventStream_resolveConnectedPromise, resolve, "f");
+        __classPrivateFieldSet7(this, _EventStream_connectedPromise, new Promise((resolve2, reject) => {
+          __classPrivateFieldSet7(this, _EventStream_resolveConnectedPromise, resolve2, "f");
           __classPrivateFieldSet7(this, _EventStream_rejectConnectedPromise, reject, "f");
         }), "f");
-        __classPrivateFieldSet7(this, _EventStream_endPromise, new Promise((resolve, reject) => {
-          __classPrivateFieldSet7(this, _EventStream_resolveEndPromise, resolve, "f");
+        __classPrivateFieldSet7(this, _EventStream_endPromise, new Promise((resolve2, reject) => {
+          __classPrivateFieldSet7(this, _EventStream_resolveEndPromise, resolve2, "f");
           __classPrivateFieldSet7(this, _EventStream_rejectEndPromise, reject, "f");
         }), "f");
         __classPrivateFieldGet8(this, _EventStream_connectedPromise, "f").catch(() => {
@@ -46115,11 +46115,11 @@ var init_EventStream = __esm({
        *   const message = await stream.emitted('message') // rejects if the stream errors
        */
       emitted(event) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve2, reject) => {
           __classPrivateFieldSet7(this, _EventStream_catchingPromiseCreated, true, "f");
           if (event !== "error")
             this.once("error", reject);
-          this.once(event, resolve);
+          this.once(event, resolve2);
         });
       }
       async done() {
@@ -46261,7 +46261,7 @@ var init_AssistantStream = __esm({
               if (done) {
                 return { value: void 0, done: true };
               }
-              return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+              return new Promise((resolve2, reject) => readQueue.push({ resolve: resolve2, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
             }
             const chunk = pushQueue.shift();
             return { value: chunk, done: false };
@@ -48004,7 +48004,7 @@ var init_ChatCompletionStream = __esm({
               if (done) {
                 return { value: void 0, done: true };
               }
-              return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+              return new Promise((resolve2, reject) => readQueue.push({ resolve: resolve2, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
             }
             const chunk = pushQueue.shift();
             return { value: chunk, done: false };
@@ -49857,7 +49857,7 @@ var init_ResponseStream = __esm({
               if (done) {
                 return { value: void 0, done: true };
               }
-              return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
+              return new Promise((resolve2, reject) => readQueue.push({ resolve: resolve2, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
             }
             const event = pushQueue.shift();
             return { value: event, done: false };
@@ -51844,16 +51844,16 @@ async function providerCommand(subcommand) {
   }
 }
 async function runProviderSetUI() {
-  return new Promise((resolve) => {
+  return new Promise((resolve2) => {
     const { unmount } = render_default(
       import_react23.default.createElement(ProviderConfigUI, {
         onComplete: () => {
           unmount();
-          resolve();
+          resolve2();
         },
         onCancel: () => {
           unmount();
-          resolve();
+          resolve2();
         }
       })
     );
@@ -57338,20 +57338,140 @@ var init_PlanModeTool = __esm({
   }
 });
 
+// src/tools/WorktreeTool/index.ts
+import { execFile as execFile4 } from "child_process";
+import { promisify as promisify4 } from "util";
+import { mkdtempSync, rmSync, existsSync as existsSync7 } from "fs";
+import { join as join9, resolve, isAbsolute as isAbsolute7 } from "path";
+import { tmpdir } from "os";
+async function git(args, cwd2) {
+  return execFileAsync4("git", args, { cwd: cwd2, timeout: TIMEOUT_MS4 });
+}
+var execFileAsync4, TIMEOUT_MS4, enterInputSchema, EnterWorktreeTool, exitInputSchema, ExitWorktreeTool;
+var init_WorktreeTool = __esm({
+  "src/tools/WorktreeTool/index.ts"() {
+    "use strict";
+    init_zod();
+    execFileAsync4 = promisify4(execFile4);
+    TIMEOUT_MS4 = 3e4;
+    enterInputSchema = external_exports.object({
+      branch: external_exports.string().describe("Name of the new branch to create for the worktree"),
+      base: external_exports.string().optional().describe("Base branch/commit to start from (default: current HEAD)")
+    });
+    EnterWorktreeTool = {
+      name: "EnterWorktree",
+      description: "Create an isolated git worktree on a new branch. All subsequent file operations will target this worktree directory, keeping the main working tree clean. Use when you want to work on a feature or experiment without touching the main branch. Returns the path of the new worktree. Call ExitWorktree when done.",
+      inputSchema: enterInputSchema,
+      async execute(input, context) {
+        if (!context.sessionState) {
+          return { content: "Worktree support is not available in this context.", isError: true };
+        }
+        if (context.sessionState.worktreePath) {
+          return {
+            content: `Already in a worktree at: ${context.sessionState.worktreePath}. Call ExitWorktree first.`,
+            isError: true
+          };
+        }
+        try {
+          await git(["rev-parse", "--git-dir"], context.cwd);
+        } catch {
+          return { content: "Not a git repository. EnterWorktree requires git.", isError: true };
+        }
+        let worktreeDir;
+        try {
+          worktreeDir = mkdtempSync(join9(tmpdir(), "tikat-worktree-"));
+        } catch (err) {
+          return { content: `Failed to create temp directory: ${String(err)}`, isError: true };
+        }
+        const branchArgs = input.base ? ["worktree", "add", "-b", input.branch, worktreeDir, input.base] : ["worktree", "add", "-b", input.branch, worktreeDir];
+        try {
+          await git(branchArgs, context.cwd);
+        } catch (err) {
+          try {
+            rmSync(worktreeDir, { recursive: true, force: true });
+          } catch {
+          }
+          return { content: `Failed to create worktree: ${String(err)}`, isError: true };
+        }
+        context.sessionState.worktreePath = worktreeDir;
+        context.sessionState.worktreeBranch = input.branch;
+        context.sessionState.worktreeMainCwd = context.cwd;
+        return {
+          content: `\u2705 Entered worktree.
+Branch: ${input.branch}
+Path: ${worktreeDir}
+
+Note: File operations should now target "${worktreeDir}" instead of the main working directory. Use absolute paths or paths relative to the worktree. Call ExitWorktree when done.`
+        };
+      }
+    };
+    exitInputSchema = external_exports.object({
+      merge: external_exports.boolean().optional().describe("If true, merge the worktree branch into the original branch after cleanup (default: false)"),
+      delete_branch: external_exports.boolean().optional().describe("If true, delete the worktree branch after removing (default: false)")
+    });
+    ExitWorktreeTool = {
+      name: "ExitWorktree",
+      description: "Remove the current git worktree and return to the main working directory. Optionally merge the worktree branch back into the original branch.",
+      inputSchema: exitInputSchema,
+      async execute(input, context) {
+        if (!context.sessionState?.worktreePath) {
+          return { content: "Not currently in a worktree.", isError: true };
+        }
+        const { worktreePath, worktreeBranch, worktreeMainCwd } = context.sessionState;
+        const lines = [];
+        if (input.merge && worktreeBranch && worktreeMainCwd) {
+          try {
+            await git(["merge", worktreeBranch], worktreeMainCwd);
+            lines.push(`\u2705 Merged "${worktreeBranch}" into current branch.`);
+          } catch (err) {
+            lines.push(`\u26A0\uFE0F Merge failed: ${String(err)}. Continuing with worktree removal.`);
+          }
+        }
+        const mainCwd = worktreeMainCwd ?? context.cwd;
+        try {
+          await git(["worktree", "remove", "--force", worktreePath], mainCwd);
+          lines.push(`\u2705 Removed worktree: ${worktreePath}`);
+        } catch {
+          try {
+            if (existsSync7(worktreePath)) rmSync(worktreePath, { recursive: true, force: true });
+            await git(["worktree", "prune"], mainCwd);
+            lines.push(`\u2705 Cleaned up worktree: ${worktreePath}`);
+          } catch (err2) {
+            lines.push(`\u26A0\uFE0F Could not fully remove worktree: ${String(err2)}`);
+          }
+        }
+        if (input.delete_branch && worktreeBranch) {
+          try {
+            await git(["branch", "-D", worktreeBranch], mainCwd);
+            lines.push(`\u2705 Deleted branch: ${worktreeBranch}`);
+          } catch (err) {
+            lines.push(`\u26A0\uFE0F Could not delete branch "${worktreeBranch}": ${String(err)}`);
+          }
+        }
+        context.sessionState.worktreePath = void 0;
+        context.sessionState.worktreeBranch = void 0;
+        context.sessionState.worktreeMainCwd = void 0;
+        lines.push("Returned to main working directory.");
+        return { content: lines.join("\n") };
+      }
+    };
+  }
+});
+
 // src/tools/TodoWriteTool/index.ts
-import { readFileSync as readFileSync5, writeFileSync as writeFileSync4, existsSync as existsSync7, mkdirSync as mkdirSync3 } from "fs";
+import { readFileSync as readFileSync5, writeFileSync as writeFileSync4, existsSync as existsSync8, mkdirSync as mkdirSync3 } from "fs";
 import { homedir as homedir2 } from "os";
-import { join as join9 } from "path";
+import { join as join10 } from "path";
 function readTodos() {
   try {
-    if (!existsSync7(TODO_FILE)) return [];
+    if (!existsSync8(TODO_FILE)) return [];
     return JSON.parse(readFileSync5(TODO_FILE, "utf8"));
   } catch {
     return [];
   }
 }
 function writeTodos(todos) {
-  mkdirSync3(join9(homedir2(), ".tikat-codex"), { recursive: true });
+  mkdirSync3(join10(homedir2(), ".tikat-codex"), { recursive: true });
   writeFileSync4(TODO_FILE, JSON.stringify(todos, null, 2), "utf8");
 }
 var TODO_FILE, todoItemSchema, writeInputSchema, TodoWriteTool, TodoReadTool, updateInputSchema, TodoUpdateTool, deleteInputSchema, TodoDeleteTool;
@@ -57359,7 +57479,7 @@ var init_TodoWriteTool = __esm({
   "src/tools/TodoWriteTool/index.ts"() {
     "use strict";
     init_zod();
-    TODO_FILE = join9(homedir2(), ".tikat-codex", "todos.json");
+    TODO_FILE = join10(homedir2(), ".tikat-codex", "todos.json");
     todoItemSchema = external_exports.object({
       id: external_exports.string(),
       content: external_exports.string(),
@@ -57670,6 +57790,7 @@ var init_tools = __esm({
     init_WebSearchTool();
     init_AskUserTool();
     init_PlanModeTool();
+    init_WorktreeTool();
     init_TodoWriteTool();
     init_SubAgentTool();
     init_base2();
@@ -57690,6 +57811,8 @@ var init_tools = __esm({
       TodoDeleteTool,
       EnterPlanModeTool,
       ExitPlanModeTool,
+      EnterWorktreeTool,
+      ExitWorktreeTool,
       SubAgentTool
     ];
     SUB_AGENT_TOOLS = ALL_TOOLS.filter((t2) => t2.name !== "SubAgent");
@@ -57743,7 +57866,7 @@ function getRetryAfterMs(err) {
   return void 0;
 }
 function sleep2(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve2) => setTimeout(resolve2, ms));
 }
 function jitter(maxMs) {
   return Math.random() * maxMs;
@@ -58162,11 +58285,11 @@ async function diagnoseCommand() {
     }
   }
   try {
-    const { existsSync: existsSync9, mkdirSync: mkdirSync5 } = await import("fs");
+    const { existsSync: existsSync10, mkdirSync: mkdirSync5 } = await import("fs");
     const { homedir: homedir4 } = await import("os");
-    const { join: join11 } = await import("path");
-    const configDir = join11(homedir4(), ".tikat-codex");
-    if (!existsSync9(configDir)) mkdirSync5(configDir, { recursive: true, mode: 448 });
+    const { join: join12 } = await import("path");
+    const configDir = join12(homedir4(), ".tikat-codex");
+    if (!existsSync10(configDir)) mkdirSync5(configDir, { recursive: true, mode: 448 });
     results.push({ label: "\u914D\u7F6E\u76EE\u5F55\u53EF\u5199", ok: true, detail: configDir });
   } catch (err) {
     results.push({ label: "\u914D\u7F6E\u76EE\u5F55\u53EF\u5199", ok: false, detail: String(err) });
@@ -58191,16 +58314,16 @@ var init_diagnose = __esm({
 });
 
 // src/utils/sessions/index.ts
-import { existsSync as existsSync8, mkdirSync as mkdirSync4, readFileSync as readFileSync6, writeFileSync as writeFileSync5, readdirSync as readdirSync3, unlinkSync as unlinkSync2 } from "fs";
+import { existsSync as existsSync9, mkdirSync as mkdirSync4, readFileSync as readFileSync6, writeFileSync as writeFileSync5, readdirSync as readdirSync3, unlinkSync as unlinkSync2 } from "fs";
 import { homedir as homedir3 } from "os";
-import { join as join10 } from "path";
+import { join as join11 } from "path";
 function ensureSessionsDir() {
-  if (!existsSync8(SESSIONS_DIR)) {
+  if (!existsSync9(SESSIONS_DIR)) {
     mkdirSync4(SESSIONS_DIR, { recursive: true, mode: 448 });
   }
 }
 function sessionFile(id) {
-  return join10(SESSIONS_DIR, `${id}.json`);
+  return join11(SESSIONS_DIR, `${id}.json`);
 }
 function generateId() {
   return (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").slice(0, 23);
@@ -58217,7 +58340,7 @@ function saveSession(id, history, model) {
   const sessionId = id ?? generateId();
   const filePath = sessionFile(sessionId);
   let createdAt = now;
-  if (id && existsSync8(filePath)) {
+  if (id && existsSync9(filePath)) {
     try {
       const existing = JSON.parse(readFileSync6(filePath, "utf8"));
       createdAt = existing.createdAt;
@@ -58239,7 +58362,7 @@ function saveSession(id, history, model) {
 }
 function loadSession(id) {
   const filePath = sessionFile(id);
-  if (!existsSync8(filePath)) return null;
+  if (!existsSync9(filePath)) return null;
   try {
     return JSON.parse(readFileSync6(filePath, "utf8"));
   } catch {
@@ -58247,12 +58370,12 @@ function loadSession(id) {
   }
 }
 function listSessions() {
-  if (!existsSync8(SESSIONS_DIR)) return [];
+  if (!existsSync9(SESSIONS_DIR)) return [];
   const files = readdirSync3(SESSIONS_DIR).filter((f2) => f2.endsWith(".json"));
   const sessions = [];
   for (const file of files) {
     try {
-      const raw = JSON.parse(readFileSync6(join10(SESSIONS_DIR, file), "utf8"));
+      const raw = JSON.parse(readFileSync6(join11(SESSIONS_DIR, file), "utf8"));
       sessions.push({
         id: raw.id,
         title: raw.title,
@@ -58268,7 +58391,7 @@ function listSessions() {
 }
 function deleteSession(id) {
   const filePath = sessionFile(id);
-  if (!existsSync8(filePath)) return false;
+  if (!existsSync9(filePath)) return false;
   try {
     unlinkSync2(filePath);
     return true;
@@ -58287,8 +58410,8 @@ var CONFIG_DIR2, SESSIONS_DIR, MAX_SESSIONS;
 var init_sessions2 = __esm({
   "src/utils/sessions/index.ts"() {
     "use strict";
-    CONFIG_DIR2 = join10(homedir3(), ".tikat-codex");
-    SESSIONS_DIR = join10(CONFIG_DIR2, "sessions");
+    CONFIG_DIR2 = join11(homedir3(), ".tikat-codex");
+    SESSIONS_DIR = join11(CONFIG_DIR2, "sessions");
     MAX_SESSIONS = 20;
   }
 });
@@ -58592,8 +58715,8 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
           streamingText: "",
           display: text ? [...s2.display, { role: "assistant", content: text, usage: { input: inputTokens, output: outputTokens } }] : s2.display
         })),
-        onAskUser: (question, choices) => new Promise((resolve) => {
-          pendingAskRef.current = resolve;
+        onAskUser: (question, choices) => new Promise((resolve2) => {
+          pendingAskRef.current = resolve2;
           setState((s2) => ({ ...s2, inputBuffer: "", status: { type: "asking", question, choices } }));
         })
       });
@@ -58619,11 +58742,11 @@ function ReplApp({ initialPrompt, model: initialModel, resumeSessionId }) {
     const trimmed = input.trim();
     if (!trimmed) return;
     if (state.status.type === "asking") {
-      const resolve = pendingAskRef.current;
-      if (resolve) {
+      const resolve2 = pendingAskRef.current;
+      if (resolve2) {
         pendingAskRef.current = null;
         setState((s2) => ({ ...s2, inputBuffer: "", status: { type: "streaming" } }));
-        resolve(trimmed);
+        resolve2(trimmed);
       }
       return;
     }
@@ -58759,7 +58882,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.5.0";
+        const VERSION3 = "1.5.1";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -58895,7 +59018,7 @@ init_prompts();
 init_session();
 init_loop();
 init_cwd();
-var VERSION2 = "1.5.0";
+var VERSION2 = "1.5.1";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);
