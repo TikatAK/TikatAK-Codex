@@ -18,7 +18,7 @@
 
 ```bash
 # 方式一：从 Release 安装 tarball（推荐，最可靠）
-npm install -g https://github.com/TikatAK/Tikat-Codex/releases/download/v1.5.2/tikat-codex-1.5.2.tgz
+npm install -g https://github.com/TikatAK/Tikat-Codex/releases/download/v1.5.3/tikat-codex-1.5.3.tgz
 
 # 方式二：克隆源码本地安装
 git clone https://github.com/TikatAK/Tikat-Codex.git

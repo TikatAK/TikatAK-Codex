@@ -2,13 +2,12 @@ import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
+import { IS_WINDOWS } from '../../utils/platform.js'
 
 const execFileAsync = promisify(execFile)
 
 const TIMEOUT_MS = 120_000
 const MAX_OUTPUT_BYTES = 200_000
-
-const IS_WINDOWS = process.platform === 'win32'
 
 const inputSchema = z.object({
   command: z.string().describe('The shell command to execute'),

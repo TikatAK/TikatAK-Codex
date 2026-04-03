@@ -1,8 +1,8 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
+import { readJson, writeJson } from '../../utils/jsonStorage.js'
 
 const TODO_FILE = join(homedir(), '.tikat-codex', 'todos.json')
 
@@ -14,15 +14,11 @@ interface Todo {
 }
 
 function readTodos(): Todo[] {
-  try {
-    if (!existsSync(TODO_FILE)) return []
-    return JSON.parse(readFileSync(TODO_FILE, 'utf8')) as Todo[]
-  } catch { return [] }
+  return readJson<Todo[]>(TODO_FILE, [])
 }
 
 function writeTodos(todos: Todo[]): void {
-  mkdirSync(join(homedir(), '.tikat-codex'), { recursive: true })
-  writeFileSync(TODO_FILE, JSON.stringify(todos, null, 2), 'utf8')
+  writeJson(TODO_FILE, todos)
 }
 
 // ── TodoWrite ───────────────────────────────────────────────────────────────
@@ -47,15 +43,18 @@ export const TodoWriteTool: ToolDef<WriteInput, string> = {
   inputSchema: writeInputSchema,
 
   async execute(input: WriteInput, _context: ToolContext): Promise<ToolResult<string>> {
-    const ids = input.todos.map(t => t.id)
-    const dupeIds = ids.filter((id, i) => ids.indexOf(id) !== i)
+    const seen = new Set<string>()
+    const dupeIds: string[] = []
+    for (const t of input.todos) {
+      if (seen.has(t.id)) dupeIds.push(t.id)
+      else seen.add(t.id)
+    }
     if (dupeIds.length > 0) {
       return {
         content: `Duplicate todo IDs detected: ${[...new Set(dupeIds)].join(', ')}`,
         isError: true,
       }
-    }
-    try {
+    }    try {
       writeTodos(input.todos as Todo[])
       return { content: `Updated ${input.todos.length} todos` }
     } catch (err) {

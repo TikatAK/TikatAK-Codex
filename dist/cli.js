@@ -56558,18 +56558,27 @@ var init_zod = __esm({
   }
 });
 
+// src/utils/platform.ts
+var IS_WINDOWS;
+var init_platform = __esm({
+  "src/utils/platform.ts"() {
+    "use strict";
+    IS_WINDOWS = process.platform === "win32";
+  }
+});
+
 // src/tools/BashTool/index.ts
 import { execFile as execFile2 } from "child_process";
 import { promisify as promisify2 } from "util";
-var execFileAsync2, TIMEOUT_MS, MAX_OUTPUT_BYTES, IS_WINDOWS, inputSchema, BashTool;
+var execFileAsync2, TIMEOUT_MS, MAX_OUTPUT_BYTES, inputSchema, BashTool;
 var init_BashTool = __esm({
   "src/tools/BashTool/index.ts"() {
     "use strict";
     init_zod();
+    init_platform();
     execFileAsync2 = promisify2(execFile2);
     TIMEOUT_MS = 12e4;
     MAX_OUTPUT_BYTES = 2e5;
-    IS_WINDOWS = process.platform === "win32";
     inputSchema = external_exports.object({
       command: external_exports.string().describe("The shell command to execute"),
       timeout: external_exports.number().optional().describe("Timeout in milliseconds (default 120000)"),
@@ -56632,15 +56641,26 @@ ${out}`,
   }
 });
 
+// src/utils/resolvePath.ts
+import * as path from "path";
+function resolvePath(inputPath, cwd2) {
+  return path.isAbsolute(inputPath) ? inputPath : path.join(cwd2, inputPath);
+}
+var init_resolvePath = __esm({
+  "src/utils/resolvePath.ts"() {
+    "use strict";
+  }
+});
+
 // src/tools/FileReadTool/index.ts
 import { readFile, stat } from "fs/promises";
 import { existsSync as existsSync4 } from "fs";
-import * as path from "path";
 var MAX_FILE_CHARS, MAX_LINES_DISPLAY, MAX_FILE_BYTES, inputSchema2, FileReadTool;
 var init_FileReadTool = __esm({
   "src/tools/FileReadTool/index.ts"() {
     "use strict";
     init_zod();
+    init_resolvePath();
     MAX_FILE_CHARS = 1e5;
     MAX_LINES_DISPLAY = 2e3;
     MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -56654,7 +56674,7 @@ var init_FileReadTool = __esm({
       description: "Read the contents of a file. Returns file content with line numbers. Supports text files. Use offset and limit for large files.",
       inputSchema: inputSchema2,
       async execute(input, context) {
-        const filePath = path.isAbsolute(input.file_path) ? input.file_path : path.join(context.cwd, input.file_path);
+        const filePath = resolvePath(input.file_path, context.cwd);
         if (!existsSync4(filePath)) {
           return {
             content: `File not found: ${input.file_path}
@@ -56700,7 +56720,7 @@ Current directory: ${context.cwd}`,
 });
 
 // src/tools/FileEditTool/index.ts
-import { readFileSync as readFileSync4, writeFileSync as writeFileSync2, existsSync as existsSync5 } from "fs";
+import { readFileSync as readFileSync4, writeFileSync as writeFileSync2, existsSync as existsSync5, mkdirSync as mkdirSync2 } from "fs";
 import * as path2 from "path";
 function countOccurrences(text, search) {
   if (!search) return 0;
@@ -56717,6 +56737,7 @@ var init_FileEditTool = __esm({
   "src/tools/FileEditTool/index.ts"() {
     "use strict";
     init_zod();
+    init_resolvePath();
     inputSchema3 = external_exports.object({
       file_path: external_exports.string().describe("Path to the file to edit"),
       old_string: external_exports.string().describe("The exact string to replace (must be unique in the file)"),
@@ -56733,7 +56754,7 @@ var init_FileEditTool = __esm({
             isError: true
           };
         }
-        const filePath = path2.isAbsolute(input.file_path) ? input.file_path : path2.join(context.cwd, input.file_path);
+        const filePath = resolvePath(input.file_path, context.cwd);
         if (!existsSync5(filePath)) {
           if (input.old_string !== "") {
             return {
@@ -56742,8 +56763,7 @@ var init_FileEditTool = __esm({
             };
           }
           try {
-            const { mkdirSync: mkdirSync7 } = await import("fs");
-            mkdirSync7(path2.dirname(filePath), { recursive: true });
+            mkdirSync2(path2.dirname(filePath), { recursive: true });
             writeFileSync2(filePath, input.new_string, "utf8");
             return { content: `Created file: ${input.file_path}` };
           } catch (err) {
@@ -56782,13 +56802,14 @@ ${input.old_string}`,
 });
 
 // src/tools/FileWriteTool/index.ts
-import { writeFileSync as writeFileSync3, mkdirSync as mkdirSync2 } from "fs";
+import { writeFileSync as writeFileSync3, mkdirSync as mkdirSync3 } from "fs";
 import * as path3 from "path";
 var MAX_FILE_SIZE_BYTES, inputSchema4, FileWriteTool;
 var init_FileWriteTool = __esm({
   "src/tools/FileWriteTool/index.ts"() {
     "use strict";
     init_zod();
+    init_resolvePath();
     MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
     inputSchema4 = external_exports.object({
       file_path: external_exports.string().describe("Path to write the file to"),
@@ -56805,12 +56826,12 @@ var init_FileWriteTool = __esm({
             isError: true
           };
         }
-        const filePath = path3.isAbsolute(input.file_path) ? input.file_path : path3.join(context.cwd, input.file_path);
+        const filePath = resolvePath(input.file_path, context.cwd);
         try {
           if (Buffer.byteLength(input.content, "utf8") > MAX_FILE_SIZE_BYTES) {
             return { content: `Content too large (exceeds 5 MB). Split into smaller writes.`, isError: true };
           }
-          mkdirSync2(path3.dirname(filePath), { recursive: true });
+          mkdirSync3(path3.dirname(filePath), { recursive: true });
           writeFileSync3(filePath, input.content, "utf8");
           const lines = input.content.split("\n").length;
           return { content: `Wrote ${lines} lines to ${input.file_path}` };
@@ -56876,6 +56897,7 @@ var init_GrepTool = __esm({
   "src/tools/GrepTool/index.ts"() {
     "use strict";
     init_zod();
+    init_resolvePath();
     execFileAsync3 = promisify3(execFile3);
     MAX_OUTPUT = 5e4;
     MAX_RESULTS = 1e3;
@@ -56921,7 +56943,7 @@ var init_GrepTool = __esm({
       description: "Search for a regex pattern in files. Returns matching lines with file paths and line numbers. Defaults to recursive search. Works without any external tools.",
       inputSchema: inputSchema5,
       async execute(input, context) {
-        const searchPath = input.path ? path4.isAbsolute(input.path) ? input.path : path4.join(context.cwd, input.path) : context.cwd;
+        const searchPath = input.path ? resolvePath(input.path, context.cwd) : context.cwd;
         if (await checkCommand("rg")) {
           const args = ["--no-heading", "--line-number"];
           if (input.case_insensitive) args.push("--ignore-case");
@@ -56987,12 +57009,12 @@ var init_GrepTool = __esm({
 
 // src/tools/GlobTool/index.ts
 import { glob } from "fs/promises";
-import * as path5 from "path";
 var MAX_RESULTS2, inputSchema6, GlobTool;
 var init_GlobTool = __esm({
   "src/tools/GlobTool/index.ts"() {
     "use strict";
     init_zod();
+    init_resolvePath();
     MAX_RESULTS2 = 500;
     inputSchema6 = external_exports.object({
       pattern: external_exports.string().describe('Glob pattern to match files (e.g. "**/*.ts", "src/**/*.{js,ts}")'),
@@ -57004,7 +57026,7 @@ var init_GlobTool = __esm({
       description: "Find files matching a glob pattern. Returns a list of matching file paths. Great for discovering files before reading them.",
       inputSchema: inputSchema6,
       async execute(input, context) {
-        const basePath = input.path ? path5.isAbsolute(input.path) ? input.path : path5.join(context.cwd, input.path) : context.cwd;
+        const basePath = input.path ? resolvePath(input.path, context.cwd) : context.cwd;
         try {
           const matches = [];
           for await (const entry of glob(input.pattern, {
@@ -57039,7 +57061,7 @@ var init_GlobTool = __esm({
 
 // src/tools/LSTool/index.ts
 import { readdirSync as readdirSync2, statSync as statSync2, existsSync as existsSync6 } from "fs";
-import * as path6 from "path";
+import * as path5 from "path";
 function isDir(p2) {
   try {
     return statSync2(p2).isDirectory();
@@ -57057,6 +57079,7 @@ var init_LSTool = __esm({
   "src/tools/LSTool/index.ts"() {
     "use strict";
     init_zod();
+    init_resolvePath();
     MAX_ENTRIES = 200;
     inputSchema7 = external_exports.object({
       path: external_exports.string().optional().describe("Directory to list (default: current directory)"),
@@ -57067,7 +57090,7 @@ var init_LSTool = __esm({
       description: "List directory contents with file sizes. Great for exploring project structure.",
       inputSchema: inputSchema7,
       async execute(input, context) {
-        const dirPath = input.path ? path6.isAbsolute(input.path) ? input.path : path6.join(context.cwd, input.path) : context.cwd;
+        const dirPath = input.path ? resolvePath(input.path, context.cwd) : context.cwd;
         try {
           let listDir2 = function(dir, indent) {
             if (count >= MAX_ENTRIES) return;
@@ -57078,15 +57101,15 @@ var init_LSTool = __esm({
               return;
             }
             const sorted = names.filter((n2) => n2 !== "node_modules" && n2 !== ".git").sort((a2, b2) => {
-              const aIsDir = isDir(path6.join(dir, a2));
-              const bIsDir = isDir(path6.join(dir, b2));
+              const aIsDir = isDir(path5.join(dir, a2));
+              const bIsDir = isDir(path5.join(dir, b2));
               if (aIsDir && !bIsDir) return -1;
               if (!aIsDir && bIsDir) return 1;
               return a2.localeCompare(b2);
             });
             for (const name of sorted) {
               if (count >= MAX_ENTRIES) break;
-              const fullPath = path6.join(dir, name);
+              const fullPath = path5.join(dir, name);
               if (isDir(fullPath)) {
                 lines.push(`${indent}\u{1F4C1} ${name}/`);
                 if (input.recursive === true) listDir2(fullPath, indent + "  ");
@@ -57342,7 +57365,7 @@ var init_PlanModeTool = __esm({
 import { execFile as execFile4 } from "child_process";
 import { promisify as promisify4 } from "util";
 import { mkdtempSync, rmSync, existsSync as existsSync7 } from "fs";
-import { join as join9, resolve, isAbsolute as isAbsolute7 } from "path";
+import { join as join6, resolve, isAbsolute as isAbsolute2 } from "path";
 import { tmpdir } from "os";
 async function git(args, cwd2) {
   return execFileAsync4("git", args, { cwd: cwd2, timeout: TIMEOUT_MS4 });
@@ -57379,7 +57402,7 @@ var init_WorktreeTool = __esm({
         }
         let worktreeDir;
         try {
-          worktreeDir = mkdtempSync(join9(tmpdir(), "tikat-worktree-"));
+          worktreeDir = mkdtempSync(join6(tmpdir(), "tikat-worktree-"));
         } catch (err) {
           return { content: `Failed to create temp directory: ${String(err)}`, isError: true };
         }
@@ -57458,6 +57481,27 @@ Note: File operations should now target "${worktreeDir}" instead of the main wor
   }
 });
 
+// src/utils/jsonStorage.ts
+import { readFileSync as readFileSync5, writeFileSync as writeFileSync4, existsSync as existsSync8, mkdirSync as mkdirSync4 } from "fs";
+import * as path6 from "path";
+function readJson(filePath, defaultValue) {
+  try {
+    if (!existsSync8(filePath)) return defaultValue;
+    return JSON.parse(readFileSync5(filePath, "utf8"));
+  } catch {
+    return defaultValue;
+  }
+}
+function writeJson(filePath, data) {
+  mkdirSync4(path6.dirname(filePath), { recursive: true });
+  writeFileSync4(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+var init_jsonStorage = __esm({
+  "src/utils/jsonStorage.ts"() {
+    "use strict";
+  }
+});
+
 // src/tools/CronTool/index.ts
 var CronTool_exports = {};
 __export(CronTool_exports, {
@@ -57468,22 +57512,15 @@ __export(CronTool_exports, {
   startJob: () => startJob,
   stopJob: () => stopJob
 });
-import { readFileSync as readFileSync5, writeFileSync as writeFileSync4, existsSync as existsSync8, mkdirSync as mkdirSync3 } from "fs";
 import { execFile as execFile5 } from "child_process";
 import { promisify as promisify5 } from "util";
-import { join as join10 } from "path";
+import { join as join7 } from "path";
 import { homedir as homedir2 } from "os";
 function readJobs() {
-  try {
-    if (!existsSync8(CRON_FILE)) return [];
-    return JSON.parse(readFileSync5(CRON_FILE, "utf8"));
-  } catch {
-    return [];
-  }
+  return readJson(CRON_FILE, []);
 }
 function writeJobs(jobs) {
-  mkdirSync3(join10(homedir2(), ".tikat-codex"), { recursive: true });
-  writeFileSync4(CRON_FILE, JSON.stringify(jobs, null, 2), "utf8");
+  writeJson(CRON_FILE, jobs);
 }
 function parseScheduleMs(schedule) {
   const s2 = schedule.trim().toLowerCase();
@@ -57504,8 +57541,8 @@ async function runJob(job) {
   jobs[idx].lastRun = (/* @__PURE__ */ new Date()).toISOString();
   jobs[idx].runCount++;
   writeJobs(jobs);
-  const shell = IS_WINDOWS2 ? "cmd.exe" : "bash";
-  const shellArg = IS_WINDOWS2 ? "/c" : "-c";
+  const shell = IS_WINDOWS ? "cmd.exe" : "bash";
+  const shellArg = IS_WINDOWS ? "/c" : "-c";
   try {
     await execFileAsync5(shell, [shellArg, job.command], { cwd: job.cwd, timeout: 6e4 });
   } catch {
@@ -57533,14 +57570,15 @@ function restoreJobs(cwd2) {
     startJob({ ...job, cwd: job.cwd || cwd2 });
   }
 }
-var execFileAsync5, CRON_FILE, IS_WINDOWS2, activeTimers, createInputSchema, CronCreateTool, deleteInputSchema, CronDeleteTool, CronListTool;
+var execFileAsync5, CRON_FILE, activeTimers, createInputSchema, CronCreateTool, deleteInputSchema, CronDeleteTool, CronListTool;
 var init_CronTool = __esm({
   "src/tools/CronTool/index.ts"() {
     "use strict";
     init_zod();
+    init_platform();
+    init_jsonStorage();
     execFileAsync5 = promisify5(execFile5);
-    CRON_FILE = join10(homedir2(), ".tikat-codex", "crons.json");
-    IS_WINDOWS2 = process.platform === "win32";
+    CRON_FILE = join7(homedir2(), ".tikat-codex", "crons.json");
     activeTimers = /* @__PURE__ */ new Map();
     createInputSchema = external_exports.object({
       id: external_exports.string().describe('Unique identifier for this job (e.g. "backup", "health-check")'),
@@ -57631,11 +57669,11 @@ Command: ${input.command}
 });
 
 // src/tools/SkillTool/index.ts
-import { readdirSync as readdirSync3, readFileSync as readFileSync6, writeFileSync as writeFileSync5, existsSync as existsSync9, mkdirSync as mkdirSync4 } from "fs";
-import { join as join11, basename as basename2, extname as extname2 } from "path";
+import { readdirSync as readdirSync3, readFileSync as readFileSync6, writeFileSync as writeFileSync5, existsSync as existsSync9, mkdirSync as mkdirSync5 } from "fs";
+import { join as join8, basename as basename2, extname as extname2 } from "path";
 import { homedir as homedir3 } from "os";
 function ensureSkillsDir() {
-  mkdirSync4(SKILLS_DIR, { recursive: true });
+  mkdirSync5(SKILLS_DIR, { recursive: true });
 }
 function listSkills() {
   ensureSkillsDir();
@@ -57646,7 +57684,7 @@ function listSkills() {
   }
 }
 function readSkill(name) {
-  const filePath = join11(SKILLS_DIR, `${name}.md`);
+  const filePath = join8(SKILLS_DIR, `${name}.md`);
   try {
     if (!existsSync9(filePath)) return null;
     return readFileSync6(filePath, "utf8");
@@ -57659,7 +57697,7 @@ var init_SkillTool = __esm({
   "src/tools/SkillTool/index.ts"() {
     "use strict";
     init_zod();
-    SKILLS_DIR = join11(homedir3(), ".tikat-codex", "skills");
+    SKILLS_DIR = join8(homedir3(), ".tikat-codex", "skills");
     runInputSchema = external_exports.object({
       name: external_exports.string().describe("Name of the skill to execute (without .md extension)"),
       task: external_exports.string().optional().describe("The specific task or context to apply the skill to. If omitted, returns the skill content for guidance.")
@@ -57730,7 +57768,7 @@ Use Skill tool with name to execute.` };
           return { content: "Invalid skill name.", isError: true };
         }
         ensureSkillsDir();
-        const filePath = join11(SKILLS_DIR, `${safeName}.md`);
+        const filePath = join8(SKILLS_DIR, `${safeName}.md`);
         try {
           writeFileSync5(filePath, input.content, "utf8");
           return { content: `\u2705 Skill "${safeName}" created at ${filePath}` };
@@ -57743,27 +57781,21 @@ Use Skill tool with name to execute.` };
 });
 
 // src/tools/TodoWriteTool/index.ts
-import { readFileSync as readFileSync7, writeFileSync as writeFileSync6, existsSync as existsSync10, mkdirSync as mkdirSync5 } from "fs";
 import { homedir as homedir4 } from "os";
-import { join as join12 } from "path";
+import { join as join9 } from "path";
 function readTodos() {
-  try {
-    if (!existsSync10(TODO_FILE)) return [];
-    return JSON.parse(readFileSync7(TODO_FILE, "utf8"));
-  } catch {
-    return [];
-  }
+  return readJson(TODO_FILE, []);
 }
 function writeTodos(todos) {
-  mkdirSync5(join12(homedir4(), ".tikat-codex"), { recursive: true });
-  writeFileSync6(TODO_FILE, JSON.stringify(todos, null, 2), "utf8");
+  writeJson(TODO_FILE, todos);
 }
 var TODO_FILE, todoItemSchema, writeInputSchema, TodoWriteTool, TodoReadTool, updateInputSchema, TodoUpdateTool, deleteInputSchema2, TodoDeleteTool;
 var init_TodoWriteTool = __esm({
   "src/tools/TodoWriteTool/index.ts"() {
     "use strict";
     init_zod();
-    TODO_FILE = join12(homedir4(), ".tikat-codex", "todos.json");
+    init_jsonStorage();
+    TODO_FILE = join9(homedir4(), ".tikat-codex", "todos.json");
     todoItemSchema = external_exports.object({
       id: external_exports.string(),
       content: external_exports.string(),
@@ -57778,8 +57810,12 @@ var init_TodoWriteTool = __esm({
       description: "Replace the entire todo list with the provided todos. Use to create, update, or manage task tracking. To update a single item, read the list first with TodoRead, modify the item, then write back the full list.",
       inputSchema: writeInputSchema,
       async execute(input, _context) {
-        const ids = input.todos.map((t2) => t2.id);
-        const dupeIds = ids.filter((id, i2) => ids.indexOf(id) !== i2);
+        const seen = /* @__PURE__ */ new Set();
+        const dupeIds = [];
+        for (const t2 of input.todos) {
+          if (seen.has(t2.id)) dupeIds.push(t2.id);
+          else seen.add(t2.id);
+        }
         if (dupeIds.length > 0) {
           return {
             content: `Duplicate todo IDs detected: ${[...new Set(dupeIds)].join(", ")}`,
@@ -58042,6 +58078,13 @@ function zodTypeToJsonSchema(schema) {
   if (schema instanceof external_exports.ZodObject) {
     return zodToJsonSchema(schema);
   }
+  if (schema instanceof external_exports.ZodUnion) {
+    const options = schema.options;
+    return { oneOf: options.map(zodTypeToJsonSchema), ...desc };
+  }
+  if (schema instanceof external_exports.ZodOptional) {
+    return zodTypeToJsonSchema(schema.unwrap());
+  }
   return { type: "string", ...desc };
 }
 function buildToolSchema(tool) {
@@ -58179,12 +58222,13 @@ async function sendMessage(opts) {
   const provider = loadActiveProvider();
   const client = getProviderClient(provider.config);
   const model = opts.model ?? provider.config.defaultModel;
+  const tools = resolveTools(opts);
   const request = {
     model,
     messages: convertMessagesToOpenAI(opts.messages, opts.system),
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
     stream: false,
-    ...resolveTools(opts) ? { tools: resolveTools(opts), tool_choice: "auto" } : {},
+    ...tools ? { tools, tool_choice: "auto" } : {},
     ...opts.temperature !== void 0 ? { temperature: opts.temperature } : {}
   };
   const response = await withRetry(() => client.chat.completions.create(request));
@@ -58194,13 +58238,14 @@ async function* sendMessageStream(opts) {
   const provider = loadActiveProvider();
   const client = getProviderClient(provider.config);
   const model = opts.model ?? provider.config.defaultModel;
+  const tools = resolveTools(opts);
   const request = {
     model,
     messages: convertMessagesToOpenAI(opts.messages, opts.system),
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
     stream: true,
     stream_options: { include_usage: true },
-    ...resolveTools(opts) ? { tools: resolveTools(opts), tool_choice: "auto" } : {},
+    ...tools ? { tools, tool_choice: "auto" } : {},
     ...opts.temperature !== void 0 ? { temperature: opts.temperature } : {}
   };
   const stream = await withRetry(() => client.chat.completions.create(request));
@@ -58577,11 +58622,11 @@ async function diagnoseCommand() {
     }
   }
   try {
-    const { existsSync: existsSync12, mkdirSync: mkdirSync7 } = await import("fs");
+    const { existsSync: existsSync11, mkdirSync: mkdirSync7 } = await import("fs");
     const { homedir: homedir6 } = await import("os");
-    const { join: join14 } = await import("path");
-    const configDir = join14(homedir6(), ".tikat-codex");
-    if (!existsSync12(configDir)) mkdirSync7(configDir, { recursive: true, mode: 448 });
+    const { join: join11 } = await import("path");
+    const configDir = join11(homedir6(), ".tikat-codex");
+    if (!existsSync11(configDir)) mkdirSync7(configDir, { recursive: true, mode: 448 });
     results.push({ label: "\u914D\u7F6E\u76EE\u5F55\u53EF\u5199", ok: true, detail: configDir });
   } catch (err) {
     results.push({ label: "\u914D\u7F6E\u76EE\u5F55\u53EF\u5199", ok: false, detail: String(err) });
@@ -58606,16 +58651,16 @@ var init_diagnose = __esm({
 });
 
 // src/utils/sessions/index.ts
-import { existsSync as existsSync11, mkdirSync as mkdirSync6, readFileSync as readFileSync8, writeFileSync as writeFileSync7, readdirSync as readdirSync4, unlinkSync as unlinkSync2 } from "fs";
+import { existsSync as existsSync10, mkdirSync as mkdirSync6, readFileSync as readFileSync7, writeFileSync as writeFileSync6, readdirSync as readdirSync4, unlinkSync as unlinkSync2 } from "fs";
 import { homedir as homedir5 } from "os";
-import { join as join13 } from "path";
+import { join as join10 } from "path";
 function ensureSessionsDir() {
-  if (!existsSync11(SESSIONS_DIR)) {
+  if (!existsSync10(SESSIONS_DIR)) {
     mkdirSync6(SESSIONS_DIR, { recursive: true, mode: 448 });
   }
 }
 function sessionFile(id) {
-  return join13(SESSIONS_DIR, `${id}.json`);
+  return join10(SESSIONS_DIR, `${id}.json`);
 }
 function generateId() {
   return (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-").slice(0, 23);
@@ -58632,9 +58677,9 @@ function saveSession(id, history, model) {
   const sessionId = id ?? generateId();
   const filePath = sessionFile(sessionId);
   let createdAt = now;
-  if (id && existsSync11(filePath)) {
+  if (id && existsSync10(filePath)) {
     try {
-      const existing = JSON.parse(readFileSync8(filePath, "utf8"));
+      const existing = JSON.parse(readFileSync7(filePath, "utf8"));
       createdAt = existing.createdAt;
     } catch {
     }
@@ -58648,26 +58693,26 @@ function saveSession(id, history, model) {
     model
   };
   const session = { ...meta, history };
-  writeFileSync7(filePath, JSON.stringify(session, null, 2), { encoding: "utf8", mode: 384 });
+  writeFileSync6(filePath, JSON.stringify(session, null, 2), { encoding: "utf8", mode: 384 });
   pruneOldSessions();
   return meta;
 }
 function loadSession(id) {
   const filePath = sessionFile(id);
-  if (!existsSync11(filePath)) return null;
+  if (!existsSync10(filePath)) return null;
   try {
-    return JSON.parse(readFileSync8(filePath, "utf8"));
+    return JSON.parse(readFileSync7(filePath, "utf8"));
   } catch {
     return null;
   }
 }
 function listSessions() {
-  if (!existsSync11(SESSIONS_DIR)) return [];
+  if (!existsSync10(SESSIONS_DIR)) return [];
   const files = readdirSync4(SESSIONS_DIR).filter((f2) => f2.endsWith(".json"));
   const sessions = [];
   for (const file of files) {
     try {
-      const raw = JSON.parse(readFileSync8(join13(SESSIONS_DIR, file), "utf8"));
+      const raw = JSON.parse(readFileSync7(join10(SESSIONS_DIR, file), "utf8"));
       sessions.push({
         id: raw.id,
         title: raw.title,
@@ -58683,7 +58728,7 @@ function listSessions() {
 }
 function deleteSession(id) {
   const filePath = sessionFile(id);
-  if (!existsSync11(filePath)) return false;
+  if (!existsSync10(filePath)) return false;
   try {
     unlinkSync2(filePath);
     return true;
@@ -58702,8 +58747,8 @@ var CONFIG_DIR2, SESSIONS_DIR, MAX_SESSIONS;
 var init_sessions2 = __esm({
   "src/utils/sessions/index.ts"() {
     "use strict";
-    CONFIG_DIR2 = join13(homedir5(), ".tikat-codex");
-    SESSIONS_DIR = join13(CONFIG_DIR2, "sessions");
+    CONFIG_DIR2 = join10(homedir5(), ".tikat-codex");
+    SESSIONS_DIR = join10(CONFIG_DIR2, "sessions");
     MAX_SESSIONS = 20;
   }
 });

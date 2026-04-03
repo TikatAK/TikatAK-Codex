@@ -2,6 +2,7 @@ import { writeFileSync, mkdirSync } from 'fs'
 import * as path from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
+import { resolvePath } from '../../utils/resolvePath.js'
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB guard
 
@@ -25,9 +26,7 @@ export const FileWriteTool: ToolDef<Input, string> = {
         isError: true,
       }
     }
-    const filePath = path.isAbsolute(input.file_path)
-      ? input.file_path
-      : path.join(context.cwd, input.file_path)
+    const filePath = resolvePath(input.file_path, context.cwd)
 
     try {
       if (Buffer.byteLength(input.content, 'utf8') > MAX_FILE_SIZE_BYTES) {

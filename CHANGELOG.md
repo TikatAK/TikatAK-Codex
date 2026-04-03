@@ -4,6 +4,21 @@
 
 ---
 
+## [1.5.3] - 2026-04-04
+
+### 重构 / 代码质量
+- **新增 `src/utils/platform.ts`**：统一导出 `IS_WINDOWS`，消除 `BashTool` 与 `CronTool` 中的重复定义
+- **新增 `src/utils/resolvePath.ts`**：提取 `resolvePath(inputPath, cwd)` 工具函数，替换 `FileReadTool`、`FileEditTool`、`FileWriteTool`、`GlobTool`、`GrepTool`、`LSTool` 中重复的路径解析模式（共 6 处）
+- **新增 `src/utils/jsonStorage.ts`**：提取 `readJson<T>` 与 `writeJson<T>` 工具函数，替换 `TodoWriteTool`、`CronTool` 中各自实现的 JSON 读写逻辑
+
+### 修复
+- **`FileEditTool`**：移除不必要的 `await import('fs')` 动态导入，改用顶层静态导入的 `mkdirSync`
+- **`claude.ts`**：修复 `sendMessage` / `sendMessageStream` 中 `resolveTools(opts)` 被调用两次的问题（提取到局部变量，消除重复计算）
+- **`TodoWriteTool`**：将重复 ID 检测从 O(n²) 改为 O(n)（`indexOf` 遍历 → `Set` 查找）
+- **`base.ts`**：为 `zodTypeToJsonSchema` 补充 `ZodUnion` 与嵌套 `ZodOptional` 的处理，避免未知类型回退为 `string`
+
+---
+
 ## [1.5.2] - 2026-04-03
 
 ### 新增

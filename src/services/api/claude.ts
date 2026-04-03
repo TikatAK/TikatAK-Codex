@@ -43,12 +43,13 @@ export async function sendMessage(opts: SendMessageOptions): Promise<AnthropicRe
   const client = getProviderClient(provider.config)
   const model = opts.model ?? provider.config.defaultModel
 
+  const tools = resolveTools(opts)
   const request: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
     model,
     messages: convertMessagesToOpenAI(opts.messages, opts.system),
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
     stream: false,
-    ...(resolveTools(opts) ? { tools: resolveTools(opts), tool_choice: 'auto' } : {}),
+    ...(tools ? { tools, tool_choice: 'auto' } : {}),
     ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
   }
 
@@ -66,13 +67,14 @@ export async function* sendMessageStream(
   const client = getProviderClient(provider.config)
   const model = opts.model ?? provider.config.defaultModel
 
+  const tools = resolveTools(opts)
   const request: OpenAI.Chat.ChatCompletionCreateParamsStreaming = {
     model,
     messages: convertMessagesToOpenAI(opts.messages, opts.system),
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
     stream: true,
     stream_options: { include_usage: true },
-    ...(resolveTools(opts) ? { tools: resolveTools(opts), tool_choice: 'auto' } : {}),
+    ...(tools ? { tools, tool_choice: 'auto' } : {}),
     ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
   }
 

@@ -14,17 +14,17 @@
  *   - These cover the most common agent use-cases without a full cron parser.
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { join } from 'path'
 import { homedir } from 'os'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
+import { IS_WINDOWS } from '../../utils/platform.js'
+import { readJson, writeJson } from '../../utils/jsonStorage.js'
 
 const execFileAsync = promisify(execFile)
 const CRON_FILE = join(homedir(), '.tikat-codex', 'crons.json')
-const IS_WINDOWS = process.platform === 'win32'
 
 // ── Storage ──────────────────────────────────────────────────────────────────
 
@@ -40,15 +40,11 @@ interface CronJob {
 }
 
 function readJobs(): CronJob[] {
-  try {
-    if (!existsSync(CRON_FILE)) return []
-    return JSON.parse(readFileSync(CRON_FILE, 'utf8')) as CronJob[]
-  } catch { return [] }
+  return readJson<CronJob[]>(CRON_FILE, [])
 }
 
 function writeJobs(jobs: CronJob[]): void {
-  mkdirSync(join(homedir(), '.tikat-codex'), { recursive: true })
-  writeFileSync(CRON_FILE, JSON.stringify(jobs, null, 2), 'utf8')
+  writeJson(CRON_FILE, jobs)
 }
 
 // ── Schedule parsing ─────────────────────────────────────────────────────────

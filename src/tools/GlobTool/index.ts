@@ -1,8 +1,8 @@
 import { glob } from 'fs/promises'
 import type { Dirent } from 'fs'
-import * as path from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
+import { resolvePath } from '../../utils/resolvePath.js'
 
 const MAX_RESULTS = 500
 
@@ -21,9 +21,7 @@ export const GlobTool: ToolDef<Input, string> = {
   inputSchema,
 
   async execute(input: Input, context: ToolContext): Promise<ToolResult<string>> {
-    const basePath = input.path
-      ? (path.isAbsolute(input.path) ? input.path : path.join(context.cwd, input.path))
-      : context.cwd
+    const basePath = input.path ? resolvePath(input.path, context.cwd) : context.cwd
 
     try {
       const matches: string[] = []

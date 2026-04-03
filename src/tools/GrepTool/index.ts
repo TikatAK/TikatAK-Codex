@@ -4,6 +4,7 @@ import { readdir, readFile, stat } from 'fs/promises'
 import * as path from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
+import { resolvePath } from '../../utils/resolvePath.js'
 
 const execFileAsync = promisify(execFile)
 const MAX_OUTPUT = 50_000
@@ -35,9 +36,7 @@ export const GrepTool: ToolDef<Input, string> = {
   inputSchema,
 
   async execute(input: Input, context: ToolContext): Promise<ToolResult<string>> {
-    const searchPath = input.path
-      ? (path.isAbsolute(input.path) ? input.path : path.join(context.cwd, input.path))
-      : context.cwd
+    const searchPath = input.path ? resolvePath(input.path, context.cwd) : context.cwd
 
     // Try rg first for speed (optional)
     if (await checkCommand('rg')) {

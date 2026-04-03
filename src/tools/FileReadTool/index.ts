@@ -1,8 +1,8 @@
 import { readFile, stat } from 'fs/promises'
 import { existsSync } from 'fs'
-import * as path from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
+import { resolvePath } from '../../utils/resolvePath.js'
 
 const MAX_FILE_CHARS = 100_000
 const MAX_LINES_DISPLAY = 2000
@@ -23,9 +23,7 @@ export const FileReadTool: ToolDef<Input, string> = {
   inputSchema,
 
   async execute(input: Input, context: ToolContext): Promise<ToolResult<string>> {
-    const filePath = path.isAbsolute(input.file_path)
-      ? input.file_path
-      : path.join(context.cwd, input.file_path)
+    const filePath = resolvePath(input.file_path, context.cwd)
 
     if (!existsSync(filePath)) {
       return {
@@ -72,7 +70,6 @@ export const FileReadTool: ToolDef<Input, string> = {
       if (result.length > MAX_FILE_CHARS) {
         return { content: result.slice(0, MAX_FILE_CHARS) + '\n... (truncated)' }
       }
-
       return { content: result }
     } catch (err) {
       return { content: `Error reading file: ${String(err)}`, isError: true }

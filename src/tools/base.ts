@@ -70,6 +70,13 @@ function zodTypeToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
   if (schema instanceof z.ZodObject) {
     return zodToJsonSchema(schema as z.ZodObject<z.ZodRawShape>)
   }
+  if (schema instanceof z.ZodUnion) {
+    const options = (schema as z.ZodUnion<[z.ZodTypeAny, ...z.ZodTypeAny[]]>).options
+    return { oneOf: options.map(zodTypeToJsonSchema), ...desc }
+  }
+  if (schema instanceof z.ZodOptional) {
+    return zodTypeToJsonSchema(schema.unwrap() as z.ZodTypeAny)
+  }
   // Unknown type — treat as untyped string to keep the schema valid
   return { type: 'string', ...desc }
 }

@@ -1,7 +1,8 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import * as path from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
+import { resolvePath } from '../../utils/resolvePath.js'
 
 const inputSchema = z.object({
   file_path: z.string().describe('Path to the file to edit'),
@@ -24,9 +25,7 @@ export const FileEditTool: ToolDef<Input, string> = {
         isError: true,
       }
     }
-    const filePath = path.isAbsolute(input.file_path)
-      ? input.file_path
-      : path.join(context.cwd, input.file_path)
+    const filePath = resolvePath(input.file_path, context.cwd)
 
     // Create file if it doesn't exist
     if (!existsSync(filePath)) {
@@ -37,8 +36,6 @@ export const FileEditTool: ToolDef<Input, string> = {
         }
       }
       try {
-        // Ensure parent dir exists
-        const { mkdirSync } = await import('fs')
         mkdirSync(path.dirname(filePath), { recursive: true })
         writeFileSync(filePath, input.new_string, 'utf8')
         return { content: `Created file: ${input.file_path}` }

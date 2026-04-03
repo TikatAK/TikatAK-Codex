@@ -2,6 +2,7 @@ import { readdirSync, statSync, existsSync } from 'fs'
 import * as path from 'path'
 import { z } from 'zod'
 import type { ToolDef, ToolContext, ToolResult } from '../base.js'
+import { resolvePath } from '../../utils/resolvePath.js'
 
 const MAX_ENTRIES = 200
 
@@ -18,9 +19,7 @@ export const LSTool: ToolDef<Input, string> = {
   inputSchema,
 
   async execute(input: Input, context: ToolContext): Promise<ToolResult<string>> {
-    const dirPath = input.path
-      ? (path.isAbsolute(input.path) ? input.path : path.join(context.cwd, input.path))
-      : context.cwd
+    const dirPath = input.path ? resolvePath(input.path, context.cwd) : context.cwd
 
     try {
       if (!existsSync(dirPath) || !isDir(dirPath)) {
