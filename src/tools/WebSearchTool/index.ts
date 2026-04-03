@@ -45,7 +45,7 @@ export const WebSearchTool: ToolDef<Input, string> = {
 
       const res = await fetch(url, {
         signal: controller.signal,
-        headers: { 'User-Agent': 'Tikat-Codex/1.4.7' },
+        headers: { 'User-Agent': `Tikat-Codex/${process.env['TIKAT_VERSION'] ?? '1.5.3'}` },
       }).finally(() => clearTimeout(timer))
 
       if (!res.ok) {
