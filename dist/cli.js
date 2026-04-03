@@ -56580,6 +56580,12 @@ var init_BashTool = __esm({
       description: "Execute a shell command. Returns stdout and stderr. Use for running code, git operations, file manipulation, and any system task.",
       inputSchema,
       async execute(input, context) {
+        if (context.sessionState?.planMode) {
+          return {
+            content: "\u{1F6AB} Bash is disabled in plan mode. Finish your plan and call ExitPlanMode first.",
+            isError: true
+          };
+        }
         const timeout = input.timeout ?? TIMEOUT_MS;
         const shell = IS_WINDOWS ? "cmd.exe" : "bash";
         const shellArg = IS_WINDOWS ? "/c" : "-c";
@@ -56721,6 +56727,12 @@ var init_FileEditTool = __esm({
       description: "Edit a file by replacing an exact string with a new string. The old_string must appear exactly once in the file. Creates the file if it does not exist (old_string must be empty).",
       inputSchema: inputSchema3,
       async execute(input, context) {
+        if (context.sessionState?.planMode) {
+          return {
+            content: "\u{1F6AB} Edit is disabled in plan mode. Finish your plan and call ExitPlanMode first.",
+            isError: true
+          };
+        }
         const filePath = path2.isAbsolute(input.file_path) ? input.file_path : path2.join(context.cwd, input.file_path);
         if (!existsSync5(filePath)) {
           if (input.old_string !== "") {
@@ -56787,6 +56799,12 @@ var init_FileWriteTool = __esm({
       description: "Write content to a file, creating it or overwriting it entirely. Creates parent directories as needed. Use for new files or complete rewrites.",
       inputSchema: inputSchema4,
       async execute(input, context) {
+        if (context.sessionState?.planMode) {
+          return {
+            content: "\u{1F6AB} Write is disabled in plan mode. Finish your plan and call ExitPlanMode first.",
+            isError: true
+          };
+        }
         const filePath = path3.isAbsolute(input.file_path) ? input.file_path : path3.join(context.cwd, input.file_path);
         try {
           if (Buffer.byteLength(input.content, "utf8") > MAX_FILE_SIZE_BYTES) {
@@ -57277,6 +57295,49 @@ var init_AskUserTool = __esm({
   }
 });
 
+// src/tools/PlanModeTool/index.ts
+var EnterPlanModeTool, ExitPlanModeTool;
+var init_PlanModeTool = __esm({
+  "src/tools/PlanModeTool/index.ts"() {
+    "use strict";
+    init_zod();
+    EnterPlanModeTool = {
+      name: "EnterPlanMode",
+      description: "Enter plan mode. In plan mode, all side-effect tools (Bash, FileWrite, FileEdit) are disabled. Use this when you want to analyze the codebase and present a detailed plan to the user BEFORE making any changes. The user can then approve or modify the plan. Call ExitPlanMode when ready to execute.",
+      inputSchema: external_exports.object({}),
+      async execute(_input, context) {
+        if (!context.sessionState) {
+          return { content: "PlanMode is not available in this context.", isError: true };
+        }
+        if (context.sessionState.planMode) {
+          return { content: "Already in plan mode." };
+        }
+        context.sessionState.planMode = true;
+        return {
+          content: "\u2705 Entered plan mode. Side-effect tools (Bash, FileWrite, FileEdit) are now disabled.\nAnalyze the codebase using read-only tools (FileRead, Glob, Grep, LS) and present your complete plan.\nCall ExitPlanMode when ready to execute."
+        };
+      }
+    };
+    ExitPlanModeTool = {
+      name: "ExitPlanMode",
+      description: "Exit plan mode and re-enable all tools including side-effect tools (Bash, FileWrite, FileEdit). Call this after presenting your plan and the user has approved it.",
+      inputSchema: external_exports.object({}),
+      async execute(_input, context) {
+        if (!context.sessionState) {
+          return { content: "PlanMode is not available in this context.", isError: true };
+        }
+        if (!context.sessionState.planMode) {
+          return { content: "Not currently in plan mode." };
+        }
+        context.sessionState.planMode = false;
+        return {
+          content: "\u2705 Exited plan mode. All tools are now enabled. You may proceed with executing the plan."
+        };
+      }
+    };
+  }
+});
+
 // src/tools/TodoWriteTool/index.ts
 import { readFileSync as readFileSync5, writeFileSync as writeFileSync4, existsSync as existsSync7, mkdirSync as mkdirSync3 } from "fs";
 import { homedir as homedir2 } from "os";
@@ -57608,6 +57669,7 @@ var init_tools = __esm({
     init_WebFetchTool();
     init_WebSearchTool();
     init_AskUserTool();
+    init_PlanModeTool();
     init_TodoWriteTool();
     init_SubAgentTool();
     init_base2();
@@ -57626,6 +57688,8 @@ var init_tools = __esm({
       TodoReadTool,
       TodoUpdateTool,
       TodoDeleteTool,
+      EnterPlanModeTool,
+      ExitPlanModeTool,
       SubAgentTool
     ];
     SUB_AGENT_TOOLS = ALL_TOOLS.filter((t2) => t2.name !== "SubAgent");
@@ -57808,6 +57872,7 @@ async function runAgentLoop(opts) {
   const { system, model, cwd: cwd2, maxRounds = MAX_AGENT_ROUNDS } = opts;
   let messages = [...opts.messages];
   let finalText = "";
+  const sessionState = { planMode: false };
   const WARN_ROUNDS_BEFORE_LIMIT = 3;
   for (let round = 0; round < maxRounds; round++) {
     const { messages: compressed, compressed: wasCompressed } = compressContext(messages);
@@ -57859,7 +57924,7 @@ async function runAgentLoop(opts) {
       messages = [...messages, { role: "assistant", content: contentBlocks }];
       return { messages, finalText, hitRoundLimit: false };
     }
-    const results = await executeTools(toolUseBlocks, { cwd: cwd2, signal: void 0, askUser: opts.onAskUser });
+    const results = await executeTools(toolUseBlocks, { cwd: cwd2, signal: void 0, askUser: opts.onAskUser, sessionState });
     opts.onToolResult?.(results);
     messages = [
       ...messages,
@@ -58694,7 +58759,7 @@ async function handleSlashCommand(cmd, _state, setState, exit) {
       setState((s2) => ({ ...s2, info: "\u23F3 \u6B63\u5728\u68C0\u67E5\u66F4\u65B0..." }));
       {
         const { checkForUpdates: checkForUpdates2 } = await Promise.resolve().then(() => (init_updater(), updater_exports));
-        const VERSION3 = "1.4.9";
+        const VERSION3 = "1.5.0";
         const info = await checkForUpdates2(VERSION3);
         if (!info.hasUpdate) {
           setState((s2) => ({ ...s2, info: `\u2705 \u5DF2\u662F\u6700\u65B0\u7248\u672C v${info.latestVersion}` }));
@@ -58830,7 +58895,7 @@ init_prompts();
 init_session();
 init_loop();
 init_cwd();
-var VERSION2 = "1.4.9";
+var VERSION2 = "1.5.0";
 async function silentUpdateCheck() {
   try {
     const info = await checkForUpdates(VERSION2);

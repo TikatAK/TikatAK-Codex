@@ -25,6 +25,12 @@ export const BashTool: ToolDef<Input, string> = {
   inputSchema,
 
   async execute(input: Input, context: ToolContext): Promise<ToolResult<string>> {
+    if (context.sessionState?.planMode) {
+      return {
+        content: '🚫 Bash is disabled in plan mode. Finish your plan and call ExitPlanMode first.',
+        isError: true,
+      }
+    }
     const timeout = input.timeout ?? TIMEOUT_MS
 
     // Windows: use cmd.exe /c; Unix: use bash -c

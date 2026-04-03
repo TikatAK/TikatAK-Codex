@@ -4,6 +4,18 @@
 
 ---
 
+## [1.5.0] - 2026-04-03
+
+### 新增
+- **EnterPlanMode / ExitPlanMode 工具**：进入计划模式后，Bash、Write、Edit 工具被禁用，模型只能使用只读工具（FileRead、Glob、Grep、LS）进行分析，呈现完整计划后再调用 ExitPlanMode 执行
+
+### 技术
+- `ToolContext` 新增 `sessionState?: SessionState`，包含 `planMode: boolean` 标志
+- `SessionState` 对象在 `runAgentLoop` 内创建，通过 `executeTools` 透传，在同一次循环的所有工具调用间共享
+- BashTool、FileWriteTool、FileEditTool 检查 `context.sessionState?.planMode`，为 true 时拒绝执行
+
+---
+
 ## [1.4.9] - 2026-04-03
 
 ### 新增

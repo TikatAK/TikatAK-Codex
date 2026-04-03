@@ -10,11 +10,19 @@ export interface ToolDef<TInput = unknown, TOutput = unknown> {
   execute(input: TInput, context: ToolContext): Promise<ToolResult<TOutput>>
 }
 
+/** Mutable session state shared across all tool calls within a single agent loop run */
+export interface SessionState {
+  /** When true, side-effect tools (Bash, FileWrite, FileEdit) are disabled */
+  planMode: boolean
+}
+
 export interface ToolContext {
   cwd: string
   signal?: AbortSignal
   /** Optional: pause agent and ask the user a question. Resolves with the user's answer. */
   askUser?: (question: string, choices?: string[]) => Promise<string>
+  /** Mutable session state shared across tool calls in the same loop run */
+  sessionState?: SessionState
 }
 
 export interface ToolResult<T = string> {

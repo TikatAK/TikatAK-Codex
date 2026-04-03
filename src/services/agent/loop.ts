@@ -6,6 +6,7 @@ import { MAX_AGENT_ROUNDS } from '../../constants/index.js'
 import type { AnthropicMessage, AnthropicBlock } from '../../adapters/openai/index.js'
 import type { AnthropicTextBlock } from '../../adapters/openai/responseAdapter.js'
 import type { ToolExecutionResult } from '../api/toolExecutor.js'
+import type { SessionState } from '../../tools/base.js'
 
 export interface AgentLoopOptions {
   messages: AnthropicMessage[]
@@ -41,6 +42,9 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
   const { system, model, cwd, maxRounds = MAX_AGENT_ROUNDS } = opts
   let messages = [...opts.messages]
   let finalText = ''
+
+  // Shared mutable state across all tool calls in this loop run
+  const sessionState: SessionState = { planMode: false }
 
   // Warn the model when it's 3 rounds from the limit, so it can wrap up gracefully
   const WARN_ROUNDS_BEFORE_LIMIT = 3
@@ -107,7 +111,7 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
       return { messages, finalText, hitRoundLimit: false }
     }
 
-    const results = await executeTools(toolUseBlocks, { cwd, signal: undefined, askUser: opts.onAskUser })
+    const results = await executeTools(toolUseBlocks, { cwd, signal: undefined, askUser: opts.onAskUser, sessionState })
     opts.onToolResult?.(results)
 
     messages = [

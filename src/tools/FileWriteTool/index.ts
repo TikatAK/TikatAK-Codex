@@ -19,6 +19,12 @@ export const FileWriteTool: ToolDef<Input, string> = {
   inputSchema,
 
   async execute(input: Input, context: ToolContext): Promise<ToolResult<string>> {
+    if (context.sessionState?.planMode) {
+      return {
+        content: '🚫 Write is disabled in plan mode. Finish your plan and call ExitPlanMode first.',
+        isError: true,
+      }
+    }
     const filePath = path.isAbsolute(input.file_path)
       ? input.file_path
       : path.join(context.cwd, input.file_path)
